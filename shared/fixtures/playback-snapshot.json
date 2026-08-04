@@ -1,0 +1,16 @@
+{
+  "protocolVersion": 1,
+  "type": "playback.snapshot",
+  "sequence": 1,
+  "serverTimeMs": 12500.0,
+  "payload": {
+    "status": "playing",
+    "scoreId": "demo-score",
+    "durationMs": 16000,
+    "positionMs": 2500.0,
+    "anchorPositionMs": 2000.0,
+    "anchorClockMs": 12000.0,
+    "speed": 1.0
+  }
+}
+

@@ -1,0 +1,2 @@
+"""Validated local content storage."""
+

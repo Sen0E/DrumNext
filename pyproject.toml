@@ -1,0 +1,41 @@
+[project]
+name = "drumnext"
+version = "0.1.0"
+description = "DrumNext projection control backend"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.116.0,<1",
+  "pydantic-settings>=2.10.0,<3",
+  "uvicorn[standard]>=0.35.0,<1",
+]
+
+[project.scripts]
+drumnext = "drumnext.main:run"
+
+[dependency-groups]
+dev = [
+  "httpx>=0.28.0,<1",
+  "pytest>=8.4.0,<9",
+  "ruff>=0.12.0,<1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend/drumnext"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["backend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+

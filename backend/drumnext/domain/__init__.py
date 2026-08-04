@@ -1,0 +1,2 @@
+"""Framework-independent domain models."""
+

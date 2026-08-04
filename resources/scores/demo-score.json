@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "demo-score",
+  "title": "DrumNext 演示乐谱",
+  "durationMs": 16000,
+  "notes": [
+    {"id":"demo-01","timeMs":1000,"noteKey":"low_3_center","velocity":0.72},
+    {"id":"demo-02","timeMs":1900,"noteKey":"low_4","velocity":0.80},
+    {"id":"demo-03","timeMs":2800,"noteKey":"low_5","velocity":0.88},
+    {"id":"demo-04","timeMs":3700,"noteKey":"low_6","velocity":0.96},
+    {"id":"demo-05","timeMs":4600,"noteKey":"low_7","velocity":0.72},
+    {"id":"demo-06","timeMs":5500,"noteKey":"mid_1","velocity":0.80},
+    {"id":"demo-07","timeMs":6400,"noteKey":"mid_2","velocity":0.88},
+    {"id":"demo-08","timeMs":7300,"noteKey":"mid_3","velocity":0.96},
+    {"id":"demo-09","timeMs":8200,"noteKey":"mid_4","velocity":0.72},
+    {"id":"demo-10","timeMs":9100,"noteKey":"mid_5","velocity":0.80},
+    {"id":"demo-11","timeMs":10000,"noteKey":"high_1","velocity":0.88},
+    {"id":"demo-12","timeMs":10900,"noteKey":"high_2","velocity":0.96},
+    {"id":"demo-13","timeMs":11800,"noteKey":"high_3","velocity":0.72},
+    {"id":"demo-14","timeMs":12700,"noteKey":"mid_6","velocity":0.80},
+    {"id":"demo-15","timeMs":13600,"noteKey":"mid_7","velocity":0.88}
+  ]
+}

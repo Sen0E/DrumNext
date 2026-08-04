@@ -1,0 +1,89 @@
+import type { DemoNote, PadConfig } from "../config/demo-content";
+import { parsePlaybackSnapshot } from "./protocol";
+import type { PlaybackSnapshot } from "./protocol";
+
+interface ScoreResponse {
+  readonly id: string;
+  readonly durationMs: number;
+  readonly notes: readonly DemoNote[];
+}
+
+export interface LoadedContent {
+  readonly playback: PlaybackSnapshot;
+  readonly durationMs: number;
+  readonly notes: readonly DemoNote[];
+  readonly pads: readonly PadConfig[];
+}
+
+export class ContentClient {
+  async load(): Promise<LoadedContent> {
+    const [playbackValue, layoutValue] = await Promise.all([
+      this.#json("/api/v1/playback"),
+      this.#json("/api/v1/layout")
+    ]);
+    const playback = parsePlaybackSnapshot(asRecord(playbackValue));
+    const scoreValue = await this.#json(`/api/v1/scores/${encodeURIComponent(playback.scoreId)}`);
+    const score = parseScore(asRecord(scoreValue));
+    const pads = parseLayout(asRecord(layoutValue));
+    const padKeys = new Set(pads.map((pad) => pad.noteKey));
+    if (score.notes.some((note) => !padKeys.has(note.noteKey))) {
+      throw new Error("乐谱包含布局中不存在的 noteKey");
+    }
+    return { playback, durationMs: score.durationMs, notes: score.notes, pads };
+  }
+
+  async #json(path: string): Promise<unknown> {
+    const response = await fetch(path);
+    if (!response.ok) throw new Error(`资源请求失败：${path} (${String(response.status)})`);
+    return await response.json() as unknown;
+  }
+}
+
+function parseScore(value: Record<string, unknown>): ScoreResponse {
+  if (typeof value.id !== "string" || typeof value.durationMs !== "number" || !Array.isArray(value.notes)) {
+    throw new Error("无效的乐谱响应");
+  }
+  const notes = value.notes.map((raw) => {
+    const note = asRecord(raw);
+    if (
+      typeof note.id !== "string" ||
+      typeof note.timeMs !== "number" ||
+      typeof note.noteKey !== "string" ||
+      typeof note.velocity !== "number"
+    ) throw new Error("无效的乐谱音符");
+    return { id: note.id, timeMs: note.timeMs, noteKey: note.noteKey, velocity: note.velocity };
+  });
+  return { id: value.id, durationMs: value.durationMs, notes };
+}
+
+function parseLayout(value: Record<string, unknown>): readonly PadConfig[] {
+  if (!Array.isArray(value.pads)) throw new Error("无效的布局响应");
+  return value.pads.map((raw) => {
+    const pad = asRecord(raw);
+    if (
+      typeof pad.noteKey !== "string" || typeof pad.x !== "number" ||
+      typeof pad.y !== "number" || typeof pad.radius !== "number" ||
+      typeof pad.color !== "string" || typeof pad.label !== "string" ||
+      typeof pad.octaveLabel !== "string"
+    ) throw new Error("无效的布局鼓面");
+    return {
+      noteKey: pad.noteKey,
+      x: pad.x,
+      y: pad.y,
+      radius: pad.radius,
+      color: parseColor(pad.color),
+      label: pad.label,
+      octaveLabel: pad.octaveLabel
+    };
+  });
+}
+
+function parseColor(value: string): number {
+  if (!/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(value)) throw new Error("无效的布局颜色");
+  return Number.parseInt(value.slice(1, 7), 16);
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("响应必须是对象");
+  return value as Record<string, unknown>;
+}

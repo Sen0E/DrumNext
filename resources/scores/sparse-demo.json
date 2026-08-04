@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "sparse-demo",
+  "title": "稀疏测试乐谱",
+  "durationMs": 4000,
+  "notes": [
+    {"id":"sparse-01","timeMs":1000,"noteKey":"high_3","velocity":1.0},
+    {"id":"sparse-02","timeMs":2800,"noteKey":"low_3_center","velocity":0.8}
+  ]
+}

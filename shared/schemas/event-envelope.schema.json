@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "event-envelope.schema.json",
+  "title": "DrumNext event envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "type", "sequence", "serverTimeMs", "payload"],
+  "properties": {
+    "protocolVersion": { "const": 1 },
+    "type": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "serverTimeMs": { "type": "number", "minimum": 0 },
+    "payload": { "type": "object" }
+  }
+}
+

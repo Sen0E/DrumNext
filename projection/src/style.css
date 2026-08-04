@@ -1,0 +1,14 @@
+:root {
+  color: #e8f5ff;
+  background: #000;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+#app { display: grid; place-items: center; background: #000; }
+canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+#status { color: #9fc8e8; font-size: 1.2rem; }
+.fatal-status { max-width: 40rem; padding: 1.5rem; color: #ffd4d4 !important; background: #48191f; border: 1px solid #d96b76; border-radius: 0.75rem; }
+.performance-panel { position: fixed; top: 12px; left: 12px; z-index: 10; padding: 7px 10px; color: #aee7ff; background: rgb(0 10 20 / 78%); border: 1px solid rgb(100 200 255 / 35%); border-radius: 5px; font: 13px/1.2 ui-monospace, monospace; pointer-events: none; }
+.fixed-preview .performance-panel { display: none; }

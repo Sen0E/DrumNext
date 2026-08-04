@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DrumNext API 调试</title>
+  <style>
+    :root { color-scheme: dark; font: 16px/1.5 system-ui,sans-serif; background:#000; color:#e9f5ff }
+    * { box-sizing:border-box } body { margin:0; padding:24px }
+    main { width:min(760px,100%); margin:auto }
+    h1 { margin:0 0 4px } .hint { color:#87a9bf; margin:0 0 24px }
+    section { margin:16px 0; padding:20px; background:#07131d; border:1px solid #244259; border-radius:14px }
+    h2 { margin:0 0 16px; font-size:18px }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px }
+    button,select,input { min-height:42px; border:1px solid #34779e; border-radius:8px; background:#102d42; color:#eefaff; font:inherit }
+    button { padding:8px 14px; cursor:pointer } button:active { background:#1c5578 }
+    label { display:grid; grid-template-columns:90px 1fr 70px; align-items:center; gap:10px; margin:14px 0 }
+    input[type=range] { width:100%; accent-color:#40c8ff; background:transparent; border:0 }
+    pre { max-height:300px; overflow:auto; margin:0; padding:14px; background:#000; color:#9ce1ff; border-radius:8px; white-space:pre-wrap }
+    a { color:#61cef7 }
+  </style>
+</head>
+<body>
+<main>
+  <h1>DrumNext API 调试</h1>
+  <p class="hint">页面直接请求 FastAPI，不保存业务状态。接口文档：<a href="/docs">/docs</a></p>
+  <section>
+    <h2>播放</h2>
+    <div class="grid">
+      <button data-command="play">播放</button><button data-command="pause">暂停</button>
+      <button data-command="resume">恢复</button><button data-command="stop">停止</button>
+      <button id="refresh">刷新状态</button>
+    </div>
+    <label>速度 <input id="speed" type="range" min="0.25" max="4" step="0.05" value="1"><output id="speedOut">1.00×</output></label>
+    <label>位置 <input id="seek" type="range" min="0" max="16000" step="100" value="0"><output id="seekOut">0.0s</output></label>
+  </section>
+  <section>
+    <h2>乐谱</h2>
+    <div class="grid"><select id="scores" aria-label="乐谱"></select><button id="selectScore">切换乐谱</button><button id="loadScores">刷新列表</button></div>
+  </section>
+  <section>
+    <h2>API 响应</h2><pre id="output" role="status">等待请求…</pre>
+  </section>
+</main>
+<script>
+  const output=document.querySelector('#output'),speed=document.querySelector('#speed'),seek=document.querySelector('#seek');
+  const show=data=>{output.textContent=JSON.stringify(data,null,2);if(data&&data.durationMs){seek.max=data.durationMs;seek.value=data.positionMs;speed.value=data.speed;updateLabels()}};
+  const request=async(path,options)=>{const response=await fetch(path,options);const data=await response.json();show(data);if(!response.ok)throw new Error(data?.error?.code||`HTTP ${response.status}`);return data};
+  const post=(path,body)=>request(path,{method:'POST',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
+  const updateLabels=()=>{document.querySelector('#speedOut').textContent=Number(speed.value).toFixed(2)+'×';document.querySelector('#seekOut').textContent=(Number(seek.value)/1000).toFixed(1)+'s'};
+  const report=error=>{output.textContent=String(error)};
+  document.querySelectorAll('[data-command]').forEach(button=>button.onclick=()=>post('/api/v1/playback/'+button.dataset.command).catch(report));
+  document.querySelector('#refresh').onclick=()=>request('/api/v1/playback').catch(report);
+  speed.oninput=updateLabels; speed.onchange=()=>post('/api/v1/playback/speed',{speed:Number(speed.value)}).catch(report);
+  seek.oninput=updateLabels; seek.onchange=()=>post('/api/v1/playback/seek',{positionMs:Number(seek.value)}).catch(report);
+  const loadScores=async()=>{const scores=await request('/api/v1/scores');document.querySelector('#scores').replaceChildren(...scores.map(score=>new Option(score.title,score.id)))};
+  document.querySelector('#loadScores').onclick=()=>loadScores().catch(report);
+  document.querySelector('#selectScore').onclick=()=>post('/api/v1/playback/score',{scoreId:document.querySelector('#scores').value}).catch(report);
+  updateLabels(); Promise.all([request('/api/v1/playback'),loadScores()]).catch(report);
+</script>
+</body>
+</html>

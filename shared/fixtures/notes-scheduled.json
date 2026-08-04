@@ -1,0 +1,16 @@
+{
+  "protocolVersion": 1,
+  "type": "notes.scheduled",
+  "sequence": 2,
+  "serverTimeMs": 12501.0,
+  "payload": {
+    "scoreId": "demo-score",
+    "windowStartMs": 2500.0,
+    "windowEndMs": 6500.0,
+    "notes": [
+      {"id":"demo-03","timeMs":2800,"noteKey":"low_3","velocity":0.88},
+      {"id":"demo-04","timeMs":3700,"noteKey":"low_4","velocity":0.96}
+    ]
+  }
+}
+
