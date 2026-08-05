@@ -22,8 +22,12 @@ test("controls playback only through FastAPI", async ({ request }) => {
 test("FastAPI hosts a working API debug interface", async ({ page }) => {
   await page.goto("http://127.0.0.1:18000/debug/api");
   await expect(page.getByRole("heading", { name: "DrumNext API 调试" })).toBeVisible();
+  await page.getByRole("button", { name: "检查服务健康状态" }).click();
+  await expect(page.locator("#output")).toContainText('"status": "ok"');
   await page.getByRole("button", { name: "播放", exact: true }).click();
   await expect(page.locator("#output")).toContainText('"status": "playing"');
+  await page.getByRole("button", { name: "读取当前布局" }).click();
+  await expect(page.getByLabel("布局 JSON")).toHaveValue(/"schemaVersion": 1/);
 });
 
 test("loads the score selected through FastAPI", async ({ page, request }) => {

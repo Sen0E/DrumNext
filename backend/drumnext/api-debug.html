@@ -5,58 +5,274 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>DrumNext API 调试</title>
   <style>
-    :root { color-scheme: dark; font: 16px/1.5 system-ui,sans-serif; background:#000; color:#e9f5ff }
-    * { box-sizing:border-box } body { margin:0; padding:24px }
-    main { width:min(760px,100%); margin:auto }
-    h1 { margin:0 0 4px } .hint { color:#87a9bf; margin:0 0 24px }
-    section { margin:16px 0; padding:20px; background:#07131d; border:1px solid #244259; border-radius:14px }
+    :root { color-scheme:dark; font:16px/1.5 system-ui,sans-serif; background:#000; color:#e9f5ff }
+    * { box-sizing:border-box }
+    body { margin:0; padding:24px }
+    main { width:min(960px,100%); margin:auto }
+    h1 { margin:0 0 4px }
     h2 { margin:0 0 16px; font-size:18px }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px }
-    button,select,input { min-height:42px; border:1px solid #34779e; border-radius:8px; background:#102d42; color:#eefaff; font:inherit }
-    button { padding:8px 14px; cursor:pointer } button:active { background:#1c5578 }
+    .hint,.endpoint { color:#87a9bf }
+    .hint { margin:0 0 24px }
+    .endpoint { margin:-12px 0 14px; font:13px/1.4 ui-monospace,monospace }
+    section { margin:16px 0; padding:20px; background:#07131d; border:1px solid #244259; border-radius:14px }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px }
+    button,select,input,textarea { border:1px solid #34779e; border-radius:8px; background:#102d42; color:#eefaff; font:inherit }
+    button,select,input { min-height:42px }
+    button { padding:8px 14px; cursor:pointer }
+    button:active { background:#1c5578 }
+    button:disabled { cursor:not-allowed; opacity:.55 }
     label { display:grid; grid-template-columns:90px 1fr 70px; align-items:center; gap:10px; margin:14px 0 }
     input[type=range] { width:100%; accent-color:#40c8ff; background:transparent; border:0 }
-    pre { max-height:300px; overflow:auto; margin:0; padding:14px; background:#000; color:#9ce1ff; border-radius:8px; white-space:pre-wrap }
+    textarea { display:block; width:100%; min-height:280px; padding:12px; resize:vertical; font:13px/1.45 ui-monospace,monospace }
+    pre { max-height:360px; overflow:auto; margin:0; padding:14px; background:#000; color:#9ce1ff; border-radius:8px; white-space:pre-wrap; overflow-wrap:anywhere }
     a { color:#61cef7 }
+    #requestMeta { min-height:21px; margin:0 0 8px; color:#87a9bf; font:13px/1.4 ui-monospace,monospace }
+    #requestMeta.error { color:#ff8e8e }
+    #socketState[data-state=open] { color:#63d785 }
+    #socketState[data-state=closed] { color:#ff8e8e }
+    @media (max-width:600px) {
+      body { padding:12px }
+      section { padding:16px }
+      label { grid-template-columns:58px 1fr 62px }
+    }
   </style>
 </head>
 <body>
 <main>
   <h1>DrumNext API 调试</h1>
-  <p class="hint">页面直接请求 FastAPI，不保存业务状态。接口文档：<a href="/docs">/docs</a></p>
+  <p class="hint">覆盖全部 13 个业务 REST API 和投影 WebSocket。页面不保存业务状态。文档：<a href="/docs">Swagger</a> · <a href="/redoc">ReDoc</a> · <a href="/openapi.json">OpenAPI JSON</a></p>
+
+  <section>
+    <h2>系统</h2>
+    <p class="endpoint">GET /api/v1/health</p>
+    <div class="grid"><button id="health">检查服务健康状态</button></div>
+  </section>
+
   <section>
     <h2>播放</h2>
+    <p class="endpoint">GET /api/v1/playback · POST /api/v1/playback/{command}</p>
     <div class="grid">
-      <button data-command="play">播放</button><button data-command="pause">暂停</button>
-      <button data-command="resume">恢复</button><button data-command="stop">停止</button>
-      <button id="refresh">刷新状态</button>
+      <button data-command="play">播放</button>
+      <button data-command="pause">暂停</button>
+      <button data-command="resume">恢复</button>
+      <button data-command="stop">停止</button>
+      <button id="refresh">获取播放状态</button>
     </div>
     <label>速度 <input id="speed" type="range" min="0.25" max="4" step="0.05" value="1"><output id="speedOut">1.00×</output></label>
     <label>位置 <input id="seek" type="range" min="0" max="16000" step="100" value="0"><output id="seekOut">0.0s</output></label>
   </section>
+
   <section>
     <h2>乐谱</h2>
-    <div class="grid"><select id="scores" aria-label="乐谱"></select><button id="selectScore">切换乐谱</button><button id="loadScores">刷新列表</button></div>
+    <p class="endpoint">GET /api/v1/scores · GET /api/v1/scores/{scoreId} · POST /api/v1/playback/score</p>
+    <div class="grid">
+      <select id="scores" aria-label="乐谱"></select>
+      <button id="loadScores">获取乐谱列表</button>
+      <button id="getScore">获取完整乐谱</button>
+      <button id="selectScore">切换为此乐谱</button>
+    </div>
   </section>
+
   <section>
-    <h2>API 响应</h2><pre id="output" role="status">等待请求…</pre>
+    <h2>布局</h2>
+    <p class="endpoint">GET /api/v1/layout · PUT /api/v1/layout</p>
+    <div class="grid">
+      <button id="loadLayout">读取当前布局</button>
+      <button id="saveLayout">提交布局 JSON</button>
+      <button id="formatLayout">格式化 JSON</button>
+    </div>
+    <label for="layoutJson" style="display:block;margin-bottom:8px">布局 JSON</label>
+    <textarea id="layoutJson" spellcheck="false" aria-label="布局 JSON" placeholder="点击“读取当前布局”加载可编辑 JSON"></textarea>
+  </section>
+
+  <section>
+    <h2>投影 WebSocket</h2>
+    <p class="endpoint">WS /ws/v1/projection · 状态：<span id="socketState" data-state="closed">未连接</span></p>
+    <div class="grid">
+      <button id="connectSocket">连接</button>
+      <button id="disconnectSocket" disabled>断开</button>
+      <button id="pingSocket" disabled>发送 clock.ping</button>
+      <button id="clearSocket">清空事件</button>
+    </div>
+    <pre id="socketOutput" role="log">等待连接…</pre>
+  </section>
+
+  <section>
+    <h2>最近一次 REST 响应</h2>
+    <p id="requestMeta">等待请求…</p>
+    <pre id="output" role="status">等待请求…</pre>
   </section>
 </main>
 <script>
-  const output=document.querySelector('#output'),speed=document.querySelector('#speed'),seek=document.querySelector('#seek');
-  const show=data=>{output.textContent=JSON.stringify(data,null,2);if(data&&data.durationMs){seek.max=data.durationMs;seek.value=data.positionMs;speed.value=data.speed;updateLabels()}};
-  const request=async(path,options)=>{const response=await fetch(path,options);const data=await response.json();show(data);if(!response.ok)throw new Error(data?.error?.code||`HTTP ${response.status}`);return data};
-  const post=(path,body)=>request(path,{method:'POST',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
-  const updateLabels=()=>{document.querySelector('#speedOut').textContent=Number(speed.value).toFixed(2)+'×';document.querySelector('#seekOut').textContent=(Number(seek.value)/1000).toFixed(1)+'s'};
-  const report=error=>{output.textContent=String(error)};
-  document.querySelectorAll('[data-command]').forEach(button=>button.onclick=()=>post('/api/v1/playback/'+button.dataset.command).catch(report));
-  document.querySelector('#refresh').onclick=()=>request('/api/v1/playback').catch(report);
-  speed.oninput=updateLabels; speed.onchange=()=>post('/api/v1/playback/speed',{speed:Number(speed.value)}).catch(report);
-  seek.oninput=updateLabels; seek.onchange=()=>post('/api/v1/playback/seek',{positionMs:Number(seek.value)}).catch(report);
-  const loadScores=async()=>{const scores=await request('/api/v1/scores');document.querySelector('#scores').replaceChildren(...scores.map(score=>new Option(score.title,score.id)))};
+  const api='/api/v1';
+  const output=document.querySelector('#output');
+  const requestMeta=document.querySelector('#requestMeta');
+  const speed=document.querySelector('#speed');
+  const seek=document.querySelector('#seek');
+  const scoresSelect=document.querySelector('#scores');
+  const layoutJson=document.querySelector('#layoutJson');
+  const socketOutput=document.querySelector('#socketOutput');
+  const socketState=document.querySelector('#socketState');
+  const connectSocket=document.querySelector('#connectSocket');
+  const disconnectSocket=document.querySelector('#disconnectSocket');
+  const pingSocket=document.querySelector('#pingSocket');
+  let socket;
+  let socketLines=[];
+
+  const updateLabels=()=>{
+    document.querySelector('#speedOut').textContent=Number(speed.value).toFixed(2)+'×';
+    document.querySelector('#seekOut').textContent=(Number(seek.value)/1000).toFixed(1)+'s';
+  };
+
+  const applyPlayback=data=>{
+    if(!data||typeof data.durationMs!=='number'||typeof data.positionMs!=='number')return;
+    seek.max=String(data.durationMs);
+    seek.value=String(data.positionMs);
+    if(typeof data.speed==='number')speed.value=String(data.speed);
+    updateLabels();
+  };
+
+  const show=data=>{
+    output.textContent=JSON.stringify(data,null,2);
+    applyPlayback(data);
+  };
+
+  const request=async(path,options={},present=true)=>{
+    const method=options.method||'GET';
+    if(present){
+      requestMeta.className='';
+      requestMeta.textContent=method+' '+path+' · 请求中…';
+    }
+    try{
+      const response=await fetch(path,options);
+      const text=await response.text();
+      let data;
+      try{data=text?JSON.parse(text):null}catch{data=text}
+      if(present){
+        show(data);
+        requestMeta.textContent=method+' '+path+' · HTTP '+response.status+' '+response.statusText;
+      }
+      if(!response.ok){
+        if(present)requestMeta.className='error';
+        throw new Error(data?.error?.code||data?.detail?.[0]?.msg||`HTTP ${response.status}`);
+      }
+      return data;
+    }catch(error){
+      if(present){
+        requestMeta.className='error';
+        if(!requestMeta.textContent.includes('HTTP'))requestMeta.textContent=method+' '+path+' · 请求失败';
+      }
+      throw error;
+    }
+  };
+
+  const jsonOptions=(method,body)=>({
+    method,
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  const post=(path,body)=>request(path,body===undefined?{method:'POST'}:jsonOptions('POST',body));
+  const report=error=>{output.textContent=String(error)+'\n\n'+output.textContent};
+  const selectedScore=()=>scoresSelect.value;
+
+  document.querySelector('#health').onclick=()=>request(api+'/health').catch(report);
+  document.querySelectorAll('[data-command]').forEach(button=>{
+    button.onclick=()=>post(api+'/playback/'+button.dataset.command).catch(report);
+  });
+  document.querySelector('#refresh').onclick=()=>request(api+'/playback').catch(report);
+  speed.oninput=updateLabels;
+  speed.onchange=()=>post(api+'/playback/speed',{speed:Number(speed.value)}).catch(report);
+  seek.oninput=updateLabels;
+  seek.onchange=()=>post(api+'/playback/seek',{positionMs:Number(seek.value)}).catch(report);
+
+  const loadScores=async(present=true)=>{
+    const previous=selectedScore();
+    const scores=await request(api+'/scores',{},present);
+    if(!Array.isArray(scores))throw new Error('乐谱列表响应不是数组');
+    scoresSelect.replaceChildren(...scores.map(score=>new Option(`${score.title} (${score.id})`,score.id)));
+    if([...scoresSelect.options].some(option=>option.value===previous))scoresSelect.value=previous;
+    return scores;
+  };
   document.querySelector('#loadScores').onclick=()=>loadScores().catch(report);
-  document.querySelector('#selectScore').onclick=()=>post('/api/v1/playback/score',{scoreId:document.querySelector('#scores').value}).catch(report);
-  updateLabels(); Promise.all([request('/api/v1/playback'),loadScores()]).catch(report);
+  document.querySelector('#getScore').onclick=()=>{
+    if(!selectedScore())return report(new Error('没有可用乐谱'));
+    request(api+'/scores/'+encodeURIComponent(selectedScore())).catch(report);
+  };
+  document.querySelector('#selectScore').onclick=()=>{
+    if(!selectedScore())return report(new Error('没有可用乐谱'));
+    post(api+'/playback/score',{scoreId:selectedScore()}).catch(report);
+  };
+
+  const loadLayout=async(present=true)=>{
+    const layout=await request(api+'/layout',{},present);
+    layoutJson.value=JSON.stringify(layout,null,2);
+    return layout;
+  };
+  document.querySelector('#loadLayout').onclick=()=>loadLayout().catch(report);
+  document.querySelector('#saveLayout').onclick=()=>{
+    try{
+      const layout=JSON.parse(layoutJson.value);
+      request(api+'/layout',jsonOptions('PUT',layout)).then(updated=>{
+        layoutJson.value=JSON.stringify(updated,null,2);
+      }).catch(report);
+    }catch(error){report(new Error('布局 JSON 无法解析：'+String(error)))}
+  };
+  document.querySelector('#formatLayout').onclick=()=>{
+    try{layoutJson.value=JSON.stringify(JSON.parse(layoutJson.value),null,2)}
+    catch(error){report(new Error('布局 JSON 无法解析：'+String(error)))}
+  };
+
+  const appendSocket=(label,value)=>{
+    const stamp=new Date().toLocaleTimeString();
+    const detail=typeof value==='string'?value:JSON.stringify(value,null,2);
+    socketLines.push(`[${stamp}] ${label}\n${detail}`);
+    socketLines=socketLines.slice(-60);
+    socketOutput.textContent=socketLines.join('\n\n');
+    socketOutput.scrollTop=socketOutput.scrollHeight;
+  };
+  const setSocketState=(state,label)=>{
+    socketState.dataset.state=state;
+    socketState.textContent=label;
+    const open=state==='open';
+    connectSocket.disabled=state==='connecting'||open;
+    disconnectSocket.disabled=!open&&state!=='connecting';
+    pingSocket.disabled=!open;
+  };
+  connectSocket.onclick=()=>{
+    if(socket&&socket.readyState<=WebSocket.OPEN)return;
+    const scheme=location.protocol==='https:'?'wss:':'ws:';
+    const url=scheme+'//'+location.host+'/ws/v1/projection';
+    setSocketState('connecting','连接中');
+    appendSocket('CONNECT',url);
+    socket=new WebSocket(url);
+    socket.onopen=()=>{setSocketState('open','已连接');appendSocket('OPEN','连接成功')};
+    socket.onmessage=event=>{
+      try{
+        const message=JSON.parse(String(event.data));
+        appendSocket('RECV '+(message.type||''),message);
+        if(message.payload)applyPlayback(message.payload);
+      }catch(error){appendSocket('RECV 无法解析',String(event.data))}
+    };
+    socket.onerror=()=>appendSocket('ERROR','WebSocket 发生错误');
+    socket.onclose=event=>{
+      setSocketState('closed','未连接');
+      appendSocket('CLOSE',{code:event.code,reason:event.reason||''});
+    };
+  };
+  disconnectSocket.onclick=()=>socket?.close(1000,'debug page disconnect');
+  pingSocket.onclick=()=>{
+    if(socket?.readyState!==WebSocket.OPEN)return;
+    const message={type:'clock.ping',clientTimeMs:performance.now()};
+    socket.send(JSON.stringify(message));
+    appendSocket('SEND clock.ping',message);
+  };
+  document.querySelector('#clearSocket').onclick=()=>{socketLines=[];socketOutput.textContent='等待事件…'};
+  window.addEventListener('beforeunload',()=>socket?.close(),{once:true});
+
+  updateLabels();
+  Promise.all([request(api+'/playback',{},false),loadScores(false),loadLayout(false)]).then(([playback])=>{
+    applyPlayback(playback);
+  }).catch(report);
 </script>
 </body>
 </html>
