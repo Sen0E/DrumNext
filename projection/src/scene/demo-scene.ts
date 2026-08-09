@@ -17,6 +17,7 @@ import {
 import type { SceneLayers } from "./layers";
 
 const APPROACH_START_RADIUS = 180;
+const APPROACH_RING_WIDTH = 14;
 const PARTICLES_PER_PAD = 10;
 
 interface PadView {
@@ -90,7 +91,7 @@ export class DemoScene {
       if (pad === undefined) throw new Error(`Unknown noteKey: ${note.noteKey}`);
       const ring = new Graphics()
         .circle(0, 0, APPROACH_START_RADIUS)
-        .stroke({ width: 7, color: pad.config.color });
+        .stroke({ width: APPROACH_RING_WIDTH, color: pad.config.color });
       ring.position.set(pad.x, pad.y);
       ring.visible = false;
       layers.approaches.addChild(ring);
