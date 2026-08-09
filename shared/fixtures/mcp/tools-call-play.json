@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "drumnext_play",
+    "arguments": {
+      "score_id": "大鱼"
+    }
+  }
+}

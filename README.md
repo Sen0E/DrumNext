@@ -4,6 +4,11 @@ DrumNext 是运行在 Raspberry Pi 5 上的空灵鼓乐谱投影与远程控制�
 
 本仓库是独立重构项目，不依赖父目录中的旧项目代码、资源或运行环境。修改代码前必须阅读 [DEVELOPMENT.md](DEVELOPMENT.md)，该文档定义了架构边界、时间模型、性能预算、测试策略和 AI 开发规范。
 
+计划中的独立 MCP 服务见
+[DrumNext MCP 独立服务开发文档](docs/integrations/xiaozhi-mcp.md)。该服务只通过
+现有 REST API 与 DrumNext 通信，并使用独立配置、进程、日志和部署单元；当前状态
+为待实现。
+
 ## 当前状态
 
 目前已经实现：

@@ -14,3 +14,4 @@ test-results/
 config/user-layout.json
 config/ending-animation.json
 config/projection-visuals.json
+/config/xiaozhi-mcp.json

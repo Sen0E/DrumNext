@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "endpoint": {
+    "url": "wss://replace-with-your-xiaozhi-mcp-endpoint",
+    "connectTimeoutSeconds": 10,
+    "pingIntervalSeconds": 20,
+    "pingTimeoutSeconds": 20
+  },
+  "drumnext": {
+    "baseUrl": "http://127.0.0.1:8000",
+    "requestTimeoutSeconds": 5
+  },
+  "reconnect": {
+    "initialDelaySeconds": 1,
+    "maxDelaySeconds": 60,
+    "multiplier": 2,
+    "jitterRatio": 0.2,
+    "stableResetSeconds": 30
+  },
+  "limits": {
+    "maxMessageBytes": 1048576,
+    "maxScoresReturned": 100
+  },
+  "process": {
+    "shutdownGraceSeconds": 5,
+    "terminateGraceSeconds": 3
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "text"
+  }
+}
