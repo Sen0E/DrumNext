@@ -1,7 +1,12 @@
 import { Container, Graphics, Text } from "pixi.js";
 import type { DemoNote, PadConfig } from "../config/demo-content";
 import { linearProgress, noteVisualState } from "../playback/timeline";
-import { endingVisualState, segment } from "./ending-animation";
+import {
+  endingVisualState,
+  segment,
+  type EndingAnimationStyle,
+  type EndingVisualState
+} from "./ending-animation";
 import type { SceneLayers } from "./layers";
 
 const APPROACH_START_RADIUS = 180;
@@ -30,6 +35,9 @@ export class DemoScene {
   readonly #endingOrigin: PadView | undefined;
   readonly #endingRipple: Graphics;
   readonly #endingHalo: Graphics;
+  readonly #endingStarburst: Graphics;
+  readonly #endingFlash: Graphics;
+  readonly #endingStyle: EndingAnimationStyle;
   readonly #width: number;
   readonly #height: number;
 
@@ -39,11 +47,13 @@ export class DemoScene {
     notes: readonly DemoNote[],
     durationMs: number,
     width: number,
-    height: number
+    height: number,
+    endingStyle: EndingAnimationStyle = "calm"
   ) {
     this.#durationMs = durationMs;
     this.#width = width;
     this.#height = height;
+    this.#endingStyle = endingStyle;
     this.#drawBackground(layers.background, width, height);
     this.#pads = new Map(pads.map((config) => {
       const pad = this.#createPad(layers, config, width, height);
@@ -73,7 +83,20 @@ export class DemoScene {
     this.#endingHalo.position.set(width / 2, height / 2);
     this.#endingHalo.visible = false;
     this.#endingHalo.blendMode = "add";
-    layers.overlay.addChild(this.#endingRipple, this.#endingHalo);
+    this.#endingStarburst = new Graphics();
+    this.#endingStarburst.visible = false;
+    this.#endingStarburst.blendMode = "add";
+    this.#endingFlash = new Graphics()
+      .rect(0, 0, width, height)
+      .fill({ color: 0xe6f8ff });
+    this.#endingFlash.visible = false;
+    this.#endingFlash.blendMode = "add";
+    layers.overlay.addChild(
+      this.#endingRipple,
+      this.#endingHalo,
+      this.#endingStarburst,
+      this.#endingFlash
+    );
   }
 
   update(playbackTimeMs: number, endingElapsedMs?: number): void {
@@ -114,6 +137,8 @@ export class DemoScene {
     }
     this.#endingRipple.visible = false;
     this.#endingHalo.visible = false;
+    this.#endingStarburst.visible = false;
+    this.#endingFlash.visible = false;
   }
 
   #createPad(layers: SceneLayers, config: PadConfig, width: number, height: number): PadView {
@@ -158,8 +183,13 @@ export class DemoScene {
   }
 
   #updateEnding(elapsedMs: number): void {
-    const state = endingVisualState(elapsedMs);
+    const state = endingVisualState(elapsedMs, this.#endingStyle);
     if (state.complete) return;
+
+    if (state.style === "spectacular") {
+      this.#updateSpectacularEnding(state);
+      return;
+    }
 
     const origin = this.#endingOrigin;
     if (origin !== undefined) {
@@ -192,6 +222,154 @@ export class DemoScene {
       this.#endingHalo.visible = true;
       this.#endingHalo.alpha = state.haloAlpha;
       this.#endingHalo.scale.set(0.65 + state.haloProgress * 1.15);
+    }
+  }
+
+  #updateSpectacularEnding(state: EndingVisualState): void {
+    const origin = this.#endingOrigin;
+    if (origin !== undefined) {
+      this.#drawSpectacularRipples(origin, state.elapsedMs);
+    }
+
+    const centerX = this.#width / 2;
+    const centerY = this.#height / 2;
+    for (const [padIndex, pad] of [...this.#pads.values()].entries()) {
+      const angle = Math.atan2(pad.y - centerY, pad.x - centerX);
+      const clockwise = ((angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2))
+        / (Math.PI * 2);
+      const chaseProgress = segment(
+        state.elapsedMs,
+        280 + clockwise * 1_250,
+        1_080 + clockwise * 1_250
+      );
+      const chase = Math.sin(Math.PI * chaseProgress);
+      const resonance = state.resonance * 0.28;
+      const lastGlow = pad === origin ? state.lastGlow : 0;
+      const glow = Math.max(chase * 0.82, resonance, lastGlow);
+
+      pad.group.alpha = state.drumAlpha;
+      pad.group.scale.set(1 + chase * 0.075 + resonance * 0.025);
+      if (glow > 0) {
+        pad.highlight.visible = true;
+        pad.highlight.alpha = glow * state.drumAlpha;
+        pad.highlight.scale.set(1.08 + chase * 0.22 + lastGlow * 0.18);
+      }
+      if (state.gathering > 0 || state.burst > 0) {
+        this.#animateSpectacularParticles(
+          pad,
+          padIndex,
+          state.elapsedMs,
+          centerX,
+          centerY
+        );
+      }
+    }
+
+    if (state.haloAlpha > 0) {
+      this.#endingHalo.visible = true;
+      this.#endingHalo.alpha = state.haloAlpha * 0.42;
+      this.#endingHalo.scale.set(0.55 + state.haloProgress * 2.1 + state.burst * 0.3);
+    }
+    if (state.burst > 0) this.#drawStarburst(state.burst, centerX, centerY);
+    if (state.flash > 0) {
+      this.#endingFlash.visible = true;
+      this.#endingFlash.alpha = state.flash * 0.045;
+    }
+  }
+
+  #drawSpectacularRipples(origin: PadView, elapsedMs: number): void {
+    const colors = [...this.#pads.values()].map((pad) => pad.config.color);
+    const maximumRadius = Math.hypot(this.#width, this.#height);
+    this.#endingRipple.clear();
+    let visible = false;
+    for (let index = 0; index < 3; index += 1) {
+      const progress = segment(elapsedMs, index * 240, 1_650 + index * 240);
+      const alpha = Math.sin(Math.PI * progress) * (0.88 - index * 0.16);
+      if (alpha <= 0) continue;
+      const radius = origin.radius * (1 + index * 0.18)
+        + (maximumRadius - origin.radius) * progress;
+      this.#endingRipple
+        .circle(origin.x, origin.y, radius)
+        .stroke({
+          width: 7 - index,
+          color: colors[(index * 5) % colors.length] ?? origin.config.color,
+          alpha
+        });
+      visible = true;
+    }
+    this.#endingRipple.visible = visible;
+    this.#endingRipple.blendMode = "add";
+  }
+
+  #drawStarburst(amount: number, centerX: number, centerY: number): void {
+    const colors = [...this.#pads.values()].map((pad) => pad.config.color);
+    this.#endingStarburst.clear();
+    for (let index = 0; index < 18; index += 1) {
+      const angle = (index / 18) * Math.PI * 2;
+      const innerRadius = 55 + (index % 3) * 14;
+      const outerRadius = innerRadius + amount * (190 + (index % 4) * 38);
+      this.#endingStarburst
+        .moveTo(
+          centerX + Math.cos(angle) * innerRadius,
+          centerY + Math.sin(angle) * innerRadius
+        )
+        .lineTo(
+          centerX + Math.cos(angle) * outerRadius,
+          centerY + Math.sin(angle) * outerRadius
+        )
+        .stroke({
+          width: index % 3 === 0 ? 5 : 3,
+          color: colors[index % colors.length] ?? 0xffffff,
+          alpha: amount * 0.72
+        });
+    }
+    this.#endingStarburst.visible = true;
+  }
+
+  #animateSpectacularParticles(
+    pad: PadView,
+    padIndex: number,
+    elapsedMs: number,
+    centerX: number,
+    centerY: number
+  ): void {
+    for (const [particleIndex, particle] of pad.particles.entries()) {
+      const gatherDelay = (padIndex % 5) * 32 + (particleIndex % 4) * 48;
+      const gather = segment(elapsedMs, 850 + gatherDelay, 3_050 + gatherDelay);
+      const burstDelay = (particleIndex % 5) * 22;
+      const burst = segment(elapsedMs, 3_120 + burstDelay, 4_150 + burstDelay);
+
+      if (burst > 0 && burst < 1) {
+        const angle = particleIndex * 2.399963 + padIndex * 0.73;
+        const distance = burst * burst * (260 + (particleIndex % 4) * 115);
+        particle.visible = true;
+        particle.position.set(
+          centerX + Math.cos(angle) * distance,
+          centerY + Math.sin(angle) * distance
+        );
+        particle.alpha = (1 - burst) * 0.96;
+        particle.scale.set(1.6 - burst * 0.9);
+        continue;
+      }
+      if (gather <= 0 || gather >= 1) continue;
+
+      const startAngle = particleIndex * 2.399963 + padIndex * 0.51;
+      const startRadius = pad.radius * (0.25 + (particleIndex % 4) * 0.17);
+      const startX = pad.x + Math.cos(startAngle) * startRadius;
+      const startY = pad.y + Math.sin(startAngle) * startRadius;
+      const initialAngle = Math.atan2(startY - centerY, startX - centerX);
+      const initialRadius = Math.hypot(startX - centerX, startY - centerY);
+      const direction = particleIndex % 2 === 0 ? 1 : -1;
+      const spiralAngle = initialAngle + direction * gather * Math.PI * 2.4;
+      const spiralRadius = initialRadius * (1 - gather * gather);
+
+      particle.visible = true;
+      particle.position.set(
+        centerX + Math.cos(spiralAngle) * spiralRadius,
+        centerY + Math.sin(spiralAngle) * spiralRadius
+      );
+      particle.alpha = Math.sin(Math.PI * gather) * 0.9;
+      particle.scale.set(0.75 + gather * 0.85);
     }
   }
 

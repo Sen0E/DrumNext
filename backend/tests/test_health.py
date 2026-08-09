@@ -35,9 +35,11 @@ async def test_fastapi_hosts_api_debug_page(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert "DrumNext API 调试" in response.text
-    assert "覆盖全部 14 个业务 REST API" in response.text
+    assert "覆盖全部 16 个业务 REST API" in response.text
     assert "GET /api/v1/health" in response.text
     assert "GET /api/v1/scores/{scoreId}" in response.text
     assert "PUT /api/v1/layout" in response.text
     assert "POST /api/v1/layout/reset" in response.text
+    assert "GET /api/v1/settings/ending-animation" in response.text
+    assert "PUT /api/v1/settings/ending-animation" in response.text
     assert "WS /ws/v1/projection" in response.text

@@ -23,4 +23,14 @@ describe("endingVisualState", () => {
       drumAlpha: 1
     });
   });
+
+  it("adds a brighter burst phase for the spectacular style", () => {
+    const calm = endingVisualState(3_450, "calm");
+    const spectacular = endingVisualState(3_450, "spectacular");
+
+    expect(calm.burst).toBe(0);
+    expect(spectacular.burst).toBeGreaterThan(0);
+    expect(spectacular.flash).toBeGreaterThan(0);
+    expect(spectacular.haloAlpha).toBeGreaterThan(calm.haloAlpha);
+  });
 });

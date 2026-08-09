@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -82,3 +83,9 @@ class Layout(BaseModel):
         if len(set(keys)) != len(keys):
             raise ValueError("layout noteKeys must be unique")
         return self
+
+
+class EndingAnimationSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    style: Literal["calm", "spectacular"] = "calm"

@@ -43,12 +43,32 @@ async function start(): Promise<void> {
   const remotePlayback = new RemotePlayback();
   const initialContent = await contentClient.load();
   remotePlayback.apply(initialContent.playback);
-  let scene = new DemoScene(layers, initialContent.pads, initialContent.notes, initialContent.durationMs, DESIGN_WIDTH, DESIGN_HEIGHT);
-  const fixedTimeParameter = new URLSearchParams(window.location.search).get("timeMs");
+  let scene = new DemoScene(
+    layers,
+    initialContent.pads,
+    initialContent.notes,
+    initialContent.durationMs,
+    DESIGN_WIDTH,
+    DESIGN_HEIGHT,
+    initialContent.endingAnimationStyle
+  );
+  const searchParameters = new URLSearchParams(window.location.search);
+  const fixedTimeParameter = searchParameters.get("timeMs");
   const fixedTimeMs = fixedTimeParameter === null ? undefined : Number(fixedTimeParameter);
-  if (fixedTimeMs !== undefined && Number.isFinite(fixedTimeMs)) {
+  const endingTimeParameter = searchParameters.get("endingMs");
+  const endingTimeMs = endingTimeParameter === null ? undefined : Number(endingTimeParameter);
+  const fixedPreview = (
+    fixedTimeMs !== undefined && Number.isFinite(fixedTimeMs)
+  ) || (
+    endingTimeMs !== undefined && Number.isFinite(endingTimeMs)
+  );
+  if (fixedPreview) {
     document.body.classList.add("fixed-preview");
-    scene.update(fixedTimeMs);
+    if (endingTimeMs !== undefined && Number.isFinite(endingTimeMs)) {
+      scene.update(initialContent.durationMs, endingTimeMs);
+    } else if (fixedTimeMs !== undefined) {
+      scene.update(fixedTimeMs);
+    }
   }
   let reloadVersion = 0;
   const reloadContent = (): void => {
@@ -60,18 +80,26 @@ async function start(): Promise<void> {
       app.stage.addChild(replacementLayers.root);
       layers = replacementLayers;
       remotePlayback.apply(content.playback);
-      scene = new DemoScene(replacementLayers, content.pads, content.notes, content.durationMs, DESIGN_WIDTH, DESIGN_HEIGHT);
+      scene = new DemoScene(
+        replacementLayers,
+        content.pads,
+        content.notes,
+        content.durationMs,
+        DESIGN_WIDTH,
+        DESIGN_HEIGHT,
+        content.endingAnimationStyle
+      );
     }).catch((error: unknown) => console.error("projection.content_reload_failed", error));
   };
   const projectionSocket = new ProjectionSocket(remotePlayback, reloadContent);
-  if (fixedTimeMs === undefined || !Number.isFinite(fixedTimeMs)) projectionSocket.connect();
+  if (!fixedPreview) projectionSocket.connect();
   window.addEventListener("beforeunload", () => projectionSocket.destroy(), { once: true });
 
   const stats = new FrameStats();
   const panel = new PerformancePanel();
   app.ticker.add(() => {
     const nowMs = performance.now();
-    if (fixedTimeMs === undefined || !Number.isFinite(fixedTimeMs)) {
+    if (!fixedPreview) {
       const serverTimeMs = projectionSocket.clock.serverTime(nowMs);
       scene.update(
         remotePlayback.positionAt(serverTimeMs),

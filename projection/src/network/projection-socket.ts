@@ -68,7 +68,10 @@ export class ProjectionSocket {
         }
       } else if (message.type === "notes.scheduled") {
         this.#applyScheduledNotes(message.payload);
-      } else if (message.type === "layout.changed") {
+      } else if (
+        message.type === "layout.changed"
+        || message.type === "ending_animation.changed"
+      ) {
         this.onContentChanged();
       }
     } catch (error: unknown) {

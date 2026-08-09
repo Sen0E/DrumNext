@@ -40,12 +40,25 @@
 <body>
 <main>
   <h1>DrumNext API 调试</h1>
-  <p class="hint">覆盖全部 14 个业务 REST API 和投影 WebSocket。页面不保存业务状态。文档：<a href="/docs">Swagger</a> · <a href="/redoc">ReDoc</a> · <a href="/openapi.json">OpenAPI JSON</a></p>
+  <p class="hint">覆盖全部 16 个业务 REST API 和投影 WebSocket。页面不保存业务状态。文档：<a href="/docs">Swagger</a> · <a href="/redoc">ReDoc</a> · <a href="/openapi.json">OpenAPI JSON</a></p>
 
   <section>
     <h2>系统</h2>
     <p class="endpoint">GET /api/v1/health</p>
     <div class="grid"><button id="health">检查服务健康状态</button></div>
+  </section>
+
+  <section>
+    <h2>结束动画</h2>
+    <p class="endpoint">GET /api/v1/settings/ending-animation · PUT /api/v1/settings/ending-animation</p>
+    <div class="grid">
+      <select id="endingStyle" aria-label="结束动画风格">
+        <option value="calm">宁静型</option>
+        <option value="spectacular">华丽型</option>
+      </select>
+      <button id="loadEndingStyle">读取动画风格</button>
+      <button id="saveEndingStyle">保存动画风格</button>
+    </div>
   </section>
 
   <section>
@@ -112,6 +125,7 @@
   const seek=document.querySelector('#seek');
   const scoresSelect=document.querySelector('#scores');
   const layoutJson=document.querySelector('#layoutJson');
+  const endingStyle=document.querySelector('#endingStyle');
   const socketOutput=document.querySelector('#socketOutput');
   const socketState=document.querySelector('#socketState');
   const connectSocket=document.querySelector('#connectSocket');
@@ -228,6 +242,19 @@
     catch(error){report(new Error('布局 JSON 无法解析：'+String(error)))}
   };
 
+  const loadEndingStyle=async(present=true)=>{
+    const settings=await request(api+'/settings/ending-animation',{},present);
+    endingStyle.value=settings.style;
+    return settings;
+  };
+  document.querySelector('#loadEndingStyle').onclick=()=>loadEndingStyle().catch(report);
+  document.querySelector('#saveEndingStyle').onclick=()=>{
+    request(
+      api+'/settings/ending-animation',
+      jsonOptions('PUT',{style:endingStyle.value})
+    ).catch(report);
+  };
+
   const appendSocket=(label,value)=>{
     const stamp=new Date().toLocaleTimeString();
     const detail=typeof value==='string'?value:JSON.stringify(value,null,2);
@@ -276,7 +303,12 @@
   window.addEventListener('beforeunload',()=>socket?.close(),{once:true});
 
   updateLabels();
-  Promise.all([request(api+'/playback',{},false),loadScores(false),loadLayout(false)]).then(([playback])=>{
+  Promise.all([
+    request(api+'/playback',{},false),
+    loadScores(false),
+    loadLayout(false),
+    loadEndingStyle(false)
+  ]).then(([playback])=>{
     applyPlayback(playback);
   }).catch(report);
 </script>

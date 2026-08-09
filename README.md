@@ -227,6 +227,17 @@ curl -X POST http://localhost:8000/api/v1/playback/speed \
 | `GET` | `/api/v1/layout`           | 获取当前布局                    |
 | `PUT` | `/api/v1/layout`           | 校验、保存用户布局并增加 revision |
 | `POST` | `/api/v1/layout/reset`   | 删除用户布局并恢复默认布局   |
+| `GET` | `/api/v1/settings/ending-animation` | 获取结束动画风格 |
+| `PUT` | `/api/v1/settings/ending-animation` | 设置并持久化结束动画风格 |
+
+结束动画支持宁静型 `calm` 和华丽型 `spectacular`。设置成功后会广播
+`ending_animation.changed`，投影端立即切换，并将选择保存到配置文件。
+
+```bash
+curl -X PUT http://localhost:8000/api/v1/settings/ending-animation \
+  -H 'Content-Type: application/json' \
+  -d '{"style":"spectacular"}'
+```
 
 不存在的乐谱使用稳定错误结构：
 
@@ -279,6 +290,7 @@ playback.seeked
 playback.speed_changed
 score.changed
 layout.changed
+ending_animation.changed
 notes.scheduled
 clock.pong
 ```
@@ -414,6 +426,7 @@ low_3_center
 | `DRUMNEXT_SCORE_DIRECTORY`  | `<root>/resources/scores`           | 乐谱目录           |
 | `DRUMNEXT_LAYOUT_FILE`      | `<root>/config/default-layout.json` | 默认布局文件       |
 | `DRUMNEXT_USER_LAYOUT_FILE` | `<root>/config/user-layout.json`   | 用户布局文件       |
+| `DRUMNEXT_ENDING_ANIMATION_FILE` | `<root>/config/ending-animation.json` | 结束动画配置文件 |
 | `DRUMNEXT_DEFAULT_SCORE_ID` | `大鱼`                              | 后端启动时默认乐谱 |
 
 所有默认路径都根据代码文件位置解析，不依赖进程启动时的当前目录。

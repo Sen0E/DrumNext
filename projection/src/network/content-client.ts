@@ -1,4 +1,5 @@
 import type { DemoNote, PadConfig } from "../config/demo-content";
+import type { EndingAnimationStyle } from "../scene/ending-animation";
 import { parsePlaybackSnapshot } from "./protocol";
 import type { PlaybackSnapshot } from "./protocol";
 
@@ -13,23 +14,32 @@ export interface LoadedContent {
   readonly durationMs: number;
   readonly notes: readonly DemoNote[];
   readonly pads: readonly PadConfig[];
+  readonly endingAnimationStyle: EndingAnimationStyle;
 }
 
 export class ContentClient {
   async load(): Promise<LoadedContent> {
-    const [playbackValue, layoutValue] = await Promise.all([
+    const [playbackValue, layoutValue, endingAnimationValue] = await Promise.all([
       this.#json("/api/v1/playback"),
-      this.#json("/api/v1/layout")
+      this.#json("/api/v1/layout"),
+      this.#json("/api/v1/settings/ending-animation")
     ]);
     const playback = parsePlaybackSnapshot(asRecord(playbackValue));
     const scoreValue = await this.#json(`/api/v1/scores/${encodeURIComponent(playback.scoreId)}`);
     const score = parseScore(asRecord(scoreValue));
     const pads = parseLayout(asRecord(layoutValue));
+    const endingAnimationStyle = parseEndingAnimation(asRecord(endingAnimationValue));
     const padKeys = new Set(pads.map((pad) => pad.noteKey));
     if (score.notes.some((note) => !padKeys.has(note.noteKey))) {
       throw new Error("乐谱包含布局中不存在的 noteKey");
     }
-    return { playback, durationMs: score.durationMs, notes: score.notes, pads };
+    return {
+      playback,
+      durationMs: score.durationMs,
+      notes: score.notes,
+      pads,
+      endingAnimationStyle
+    };
   }
 
   async #json(path: string): Promise<unknown> {
@@ -37,6 +47,13 @@ export class ContentClient {
     if (!response.ok) throw new Error(`资源请求失败：${path} (${String(response.status)})`);
     return await response.json() as unknown;
   }
+}
+
+function parseEndingAnimation(value: Record<string, unknown>): EndingAnimationStyle {
+  if (value.style !== "calm" && value.style !== "spectacular") {
+    throw new Error("无效的结束动画风格");
+  }
+  return value.style;
 }
 
 function parseScore(value: Record<string, unknown>): ScoreResponse {

@@ -10,12 +10,14 @@ from drumnext import __version__
 from drumnext.api.content import router as content_router
 from drumnext.api.health import router as health_router
 from drumnext.api.playback import router as playback_router
+from drumnext.api.settings import router as settings_router
 from drumnext.config import Settings, settings
 from drumnext.domain.protocol import ClockPing
 from drumnext.playback.clock import SystemMonotonicClock
 from drumnext.playback.scheduling import select_note_window
 from drumnext.playback.service import PlaybackService
 from drumnext.storage.content import ContentNotFoundError, LayoutStore, ScoreStore
+from drumnext.storage.settings import EndingAnimationSettingsStore
 from drumnext.transport.events import EventHub
 
 
@@ -39,9 +41,13 @@ def create_app(app_settings: Settings | None = None) -> FastAPI:
     app.state.layout = LayoutStore(
         resolved_settings.layout_file, resolved_settings.user_layout_file
     )
+    app.state.ending_animation = EndingAnimationSettingsStore(
+        resolved_settings.ending_animation_file
+    )
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(playback_router, prefix="/api/v1")
     app.include_router(content_router, prefix="/api/v1")
+    app.include_router(settings_router, prefix="/api/v1")
 
     @app.get("/debug/api", include_in_schema=False)
     async def api_debug_page() -> Response:

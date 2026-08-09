@@ -12,3 +12,4 @@ test-results/
 *.tsbuildinfo
 .env
 config/user-layout.json
+config/ending-animation.json

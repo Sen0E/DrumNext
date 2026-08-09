@@ -10,6 +10,25 @@ test("renders the deterministic approach and hit scene", async ({ page }) => {
   });
 });
 
+test("renders the spectacular ending style selected through the API", async ({ page, request }) => {
+  const updated = await request.put("/api/v1/settings/ending-animation", {
+    data: { style: "spectacular" }
+  });
+  expect(await updated.json()).toEqual({ style: "spectacular" });
+
+  await page.goto("/?endingMs=3450");
+  const canvas = page.getByLabel("DrumNext WebGL2 场景");
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveScreenshot("spectacular-ending-3450ms.png", {
+    animations: "disabled",
+    maxDiffPixelRatio: 0.01
+  });
+
+  await request.put("/api/v1/settings/ending-animation", {
+    data: { style: "calm" }
+  });
+});
+
 test("controls playback only through FastAPI", async ({ request }) => {
   const started = await request.post("/api/v1/playback/play");
   expect(started.ok()).toBe(true);
@@ -41,6 +60,7 @@ test("loads the score selected through FastAPI", async ({ page, request }) => {
 });
 
 test("plays the calm ending animation once and restores the static drums", async ({ page, request }) => {
+  await request.put("/api/v1/settings/ending-animation", { data: { style: "calm" } });
   await request.post("/api/v1/playback/score", { data: { scoreId: "sparse-demo" } });
   await request.post("/api/v1/playback/seek", { data: { positionMs: 4_000 } });
   await page.goto("/");

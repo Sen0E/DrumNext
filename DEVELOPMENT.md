@@ -281,6 +281,7 @@ playback.speed_changed
 score.changed
 notes.scheduled
 layout.changed
+ending_animation.changed
 highlight.changed
 server.error
 ```
