@@ -17,12 +17,23 @@ from drumnext_mcp.api_client import DrumNextApiClient
 from drumnext_mcp.config import DrumNextConfig, LimitsConfig
 from drumnext_mcp.tools import DrumNextTools, register_tools
 
+SERVER_NAME = "DrumNext 空灵鼓投影"
+SERVER_INSTRUCTIONS = (
+    "本服务只控制空灵鼓演奏引导投影。用户提到播放、暂停、继续、停止、进度、跳转、"
+    "倍速或乐谱时，应理解为操作空灵鼓投影的乐谱演示时间轴，而不是普通音乐播放器、"
+    "音频设备或视频播放器。查询类工具无副作用；控制类工具会立即改变现场投影状态。"
+)
+
 
 def create_server(
     client: DrumNextApiClient,
     max_scores_returned: int,
 ) -> FastMCP:
-    server = FastMCP(name="DrumNext", log_level="ERROR")
+    server = FastMCP(
+        name=SERVER_NAME,
+        instructions=SERVER_INSTRUCTIONS,
+        log_level="ERROR",
+    )
     register_tools(server, DrumNextTools(client, max_scores_returned))
     _remove_non_tool_capabilities(server)
     return server

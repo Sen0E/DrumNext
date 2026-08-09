@@ -117,7 +117,7 @@ async def test_score_id_has_priority_over_an_identical_title() -> None:
 
     result = await make_tools(client).play("大鱼")
 
-    assert result.message == "已开始播放《ID 优先》"
+    assert result.message == "空灵鼓投影已开始播放乐谱《ID 优先》"
     assert client.calls == [
         ("list_scores", None),
         ("change_score", "大鱼"),
@@ -254,6 +254,9 @@ async def test_tools_list_contains_exact_names_and_schemas() -> None:
     speed_schema = by_name["drumnext_set_speed"].inputSchema
     assert speed_schema["properties"]["speed"]["minimum"] == 0.25
     assert speed_schema["properties"]["speed"]["maximum"] == 4.0
+    assert by_name["drumnext_play"].title == "播放空灵鼓投影乐谱"
+    assert all("空灵鼓" in (tool.title or "") for tool in listed)
+    assert all("空灵鼓" in (tool.description or "") for tool in listed)
 
 
 @pytest.mark.anyio

@@ -88,13 +88,14 @@ async def test_initialize_list_and_call_over_mcp_session() -> None:
                 called = await session.call_tool("drumnext_play", {"score_id": "大鱼"})
             task_group.cancel_scope.cancel()
 
-    assert initialized.serverInfo.name == "DrumNext"
+    assert initialized.serverInfo.name == "DrumNext 空灵鼓投影"
+    assert "空灵鼓演奏引导投影" in (initialized.instructions or "")
     assert initialized.capabilities.tools is not None
     assert initialized.capabilities.resources is None
     assert initialized.capabilities.prompts is None
     assert len(listed.tools) == 8
     assert called.isError is False
-    assert called.structuredContent["message"] == "已开始播放《大鱼》"
+    assert called.structuredContent["message"] == "空灵鼓投影已开始播放乐谱《大鱼》"
     assert called.structuredContent["playback"]["scoreId"] == "fish"
     assert [(request.method, request.url.path) for request in requests] == [
         ("GET", "/api/v1/scores"),

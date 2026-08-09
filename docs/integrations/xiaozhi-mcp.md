@@ -203,7 +203,9 @@ packages = ["backend/drumnext", "backend/drumnext_mcp"]
 
 ### 6.5 `server.py`
 
-- 创建名为 `DrumNext` 的 FastMCP Server。
+- 创建名为 `DrumNext 空灵鼓投影` 的 FastMCP Server。
+- Server instructions 和所有工具显示名称、描述必须明确说明其控制对象是空灵鼓演奏
+  引导投影，避免模型误判为普通音乐播放器、音频设备或视频播放器。
 - 只声明 tools capability。
 - 以 stdio transport 运行。
 - stdout 只允许 MCP JSON-RPC，应用日志只能写 stderr。
@@ -316,14 +318,14 @@ packages = ["backend/drumnext", "backend/drumnext_mcp"]
 
 | 工具 | 参数 | REST 调用 | 说明 |
 | --- | --- | --- | --- |
-| `drumnext_get_status` | 无 | `GET /api/v1/playback` | 查询当前状态 |
-| `drumnext_list_scores` | 无 | `GET /api/v1/scores` | 查询乐谱摘要 |
-| `drumnext_play` | `score_id?: string` | 见下文 | 播放当前或指定乐谱 |
-| `drumnext_pause` | 无 | `POST /api/v1/playback/pause` | 暂停 |
-| `drumnext_resume` | 无 | `POST /api/v1/playback/resume` | 恢复 |
-| `drumnext_stop` | 无 | `POST /api/v1/playback/stop` | 停止并回到开头 |
-| `drumnext_seek` | `position_seconds: float` | `POST /api/v1/playback/seek` | 跳转到绝对秒数 |
-| `drumnext_set_speed` | `speed: float` | `POST /api/v1/playback/speed` | 设置播放速度 |
+| `drumnext_get_status` | 无 | `GET /api/v1/playback` | 查询空灵鼓投影状态 |
+| `drumnext_list_scores` | 无 | `GET /api/v1/scores` | 查询空灵鼓投影乐谱摘要 |
+| `drumnext_play` | `score_id?: string` | 见下文 | 播放当前或指定空灵鼓投影乐谱 |
+| `drumnext_pause` | 无 | `POST /api/v1/playback/pause` | 暂停空灵鼓投影 |
+| `drumnext_resume` | 无 | `POST /api/v1/playback/resume` | 继续空灵鼓投影 |
+| `drumnext_stop` | 无 | `POST /api/v1/playback/stop` | 停止投影并回到开头 |
+| `drumnext_seek` | `position_seconds: float` | `POST /api/v1/playback/seek` | 跳转投影时间轴 |
+| `drumnext_set_speed` | `speed: float` | `POST /api/v1/playback/speed` | 设置投影演示速度 |
 
 第一版只暴露上述八个工具。增加工具必须先更新本文档和安全审查。
 
@@ -368,7 +370,7 @@ packages = ["backend/drumnext", "backend/drumnext_mcp"]
 
 ```json
 {
-  "message": "已开始播放《大鱼》",
+  "message": "空灵鼓投影已开始播放乐谱《大鱼》",
   "playback": {
     "status": "playing",
     "scoreId": "大鱼",
