@@ -25,10 +25,21 @@ async def get_layout(request: Request) -> Layout:
 async def update_layout(layout: Layout, request: Request) -> Layout:
     async with request.app.state.command_lock:
         updated = request.app.state.layout.update(layout)
-        events: EventHub = request.app.state.events
-        message = await events.envelope(
-            "layout.changed", updated.model_dump(by_alias=True, mode="json")
-        )
-        await events.broadcast(message)
+        await _broadcast_layout_changed(request, updated)
         return updated
 
+
+@router.post("/layout/reset", response_model=Layout)
+async def reset_layout(request: Request) -> Layout:
+    async with request.app.state.command_lock:
+        default = request.app.state.layout.reset()
+        await _broadcast_layout_changed(request, default)
+        return default
+
+
+async def _broadcast_layout_changed(request: Request, layout: Layout) -> None:
+    events: EventHub = request.app.state.events
+    message = await events.envelope(
+        "layout.changed", layout.model_dump(by_alias=True, mode="json")
+    )
+    await events.broadcast(message)

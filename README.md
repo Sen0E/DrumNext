@@ -225,7 +225,8 @@ curl -X POST http://localhost:8000/api/v1/playback/speed \
 | `GET` | `/api/v1/scores`           | 列出乐谱摘要                    |
 | `GET` | `/api/v1/scores/{scoreId}` | 获取完整乐谱                    |
 | `GET` | `/api/v1/layout`           | 获取当前布局                    |
-| `PUT` | `/api/v1/layout`           | 校验、持久化布局并增加 revision |
+| `PUT` | `/api/v1/layout`           | 校验、保存用户布局并增加 revision |
+| `POST` | `/api/v1/layout/reset`   | 删除用户布局并恢复默认布局   |
 
 不存在的乐谱使用稳定错误结构：
 
@@ -397,6 +398,8 @@ low_3_center
 - `noteKey` 不得重复。
 - 颜色使用 `#RRGGBB` 或 `#RRGGBBAA`。
 - `PUT /api/v1/layout` 会忽略请求中的旧 revision，并基于当前 revision 加一。
+- 用户布局只写入 `config/user-layout.json`，不会修改默认布局文件。
+- `POST /api/v1/layout/reset` 会删除用户布局文件并返回默认布局。
 - 布局更新成功后广播 `layout.changed`，投影端销毁旧场景并重建全部图层。
 
 ## 配置
@@ -409,7 +412,8 @@ low_3_center
 | `DRUMNEXT_PORT`             | `8000`                              | FastAPI 端口       |
 | `DRUMNEXT_PROJECTION_DIST`  | `<root>/dist`                       | 投影生产构建目录   |
 | `DRUMNEXT_SCORE_DIRECTORY`  | `<root>/resources/scores`           | 乐谱目录           |
-| `DRUMNEXT_LAYOUT_FILE`      | `<root>/config/default-layout.json` | 当前布局文件       |
+| `DRUMNEXT_LAYOUT_FILE`      | `<root>/config/default-layout.json` | 默认布局文件       |
+| `DRUMNEXT_USER_LAYOUT_FILE` | `<root>/config/user-layout.json`   | 用户布局文件       |
 | `DRUMNEXT_DEFAULT_SCORE_ID` | `大鱼`                              | 后端启动时默认乐谱 |
 
 所有默认路径都根据代码文件位置解析，不依赖进程启动时的当前目录。
@@ -514,7 +518,7 @@ http://localhost:8000
 
 ### 修改鼓面布局
 
-优先通过 `PUT /api/v1/layout` 修改并让后端递增 revision。若直接编辑 `config/default-layout.json`，仍必须运行 Pydantic/pytest 校验和投影截图测试。
+优先通过 `PUT /api/v1/layout` 修改并让后端递增 revision，修改只会写入 `config/user-layout.json`。调用 `POST /api/v1/layout/reset` 可删除用户布局并恢复 `config/default-layout.json`。
 
 不要在效果代码中写死屏幕坐标；布局计算只能使用归一化数据和统一的 1920×1080 设计视口。
 

@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "revision": 3,
+  "revision": 5,
   "pads": [
     {
       "noteKey": "low_3_center",
-      "x": 0.2,
-      "y": 0.2,
+      "x": 0.5,
+      "y": 0.5,
       "radius": 0.07,
       "color": "#45A3FF",
       "label": "3",

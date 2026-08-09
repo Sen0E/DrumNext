@@ -72,18 +72,39 @@ def _legacy_score(score_id: str, rows: list[object]) -> Score:
 
 
 class LayoutStore:
-    def __init__(self, path: Path) -> None:
-        self._path = path.resolve()
+    def __init__(self, default_path: Path, user_path: Path | None = None) -> None:
+        self._default_path = default_path.resolve()
+        self._user_path = (
+            user_path.resolve()
+            if user_path is not None
+            else self._default_path.with_name("user-layout.json")
+        )
 
     def get(self) -> Layout:
-        return Layout.model_validate(json.loads(self._path.read_text(encoding="utf-8")))
+        if self._user_path.is_file():
+            try:
+                return self._read(self._user_path)
+            except FileNotFoundError:
+                # A concurrent reset may remove the file after is_file().
+                pass
+        return self._read(self._default_path)
 
     def update(self, layout: Layout) -> Layout:
         current = self.get()
         updated = layout.model_copy(update={"revision": current.revision + 1})
-        temporary = self._path.with_suffix(".tmp")
+        self._user_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self._user_path.with_suffix(".tmp")
         temporary.write_text(
             updated.model_dump_json(by_alias=True, indent=2), encoding="utf-8"
         )
-        temporary.replace(self._path)
+        temporary.replace(self._user_path)
         return updated
+
+    def reset(self) -> Layout:
+        default = self._read(self._default_path)
+        self._user_path.unlink(missing_ok=True)
+        return default
+
+    @staticmethod
+    def _read(path: Path) -> Layout:
+        return Layout.model_validate(json.loads(path.read_text(encoding="utf-8")))

@@ -40,7 +40,7 @@
 <body>
 <main>
   <h1>DrumNext API 调试</h1>
-  <p class="hint">覆盖全部 13 个业务 REST API 和投影 WebSocket。页面不保存业务状态。文档：<a href="/docs">Swagger</a> · <a href="/redoc">ReDoc</a> · <a href="/openapi.json">OpenAPI JSON</a></p>
+  <p class="hint">覆盖全部 14 个业务 REST API 和投影 WebSocket。页面不保存业务状态。文档：<a href="/docs">Swagger</a> · <a href="/redoc">ReDoc</a> · <a href="/openapi.json">OpenAPI JSON</a></p>
 
   <section>
     <h2>系统</h2>
@@ -75,10 +75,11 @@
 
   <section>
     <h2>布局</h2>
-    <p class="endpoint">GET /api/v1/layout · PUT /api/v1/layout</p>
+    <p class="endpoint">GET /api/v1/layout · PUT /api/v1/layout · POST /api/v1/layout/reset</p>
     <div class="grid">
       <button id="loadLayout">读取当前布局</button>
       <button id="saveLayout">提交布局 JSON</button>
+      <button id="resetLayout">恢复默认布局</button>
       <button id="formatLayout">格式化 JSON</button>
     </div>
     <label for="layoutJson" style="display:block;margin-bottom:8px">布局 JSON</label>
@@ -216,6 +217,11 @@
         layoutJson.value=JSON.stringify(updated,null,2);
       }).catch(report);
     }catch(error){report(new Error('布局 JSON 无法解析：'+String(error)))}
+  };
+  document.querySelector('#resetLayout').onclick=()=>{
+    post(api+'/layout/reset').then(layout=>{
+      layoutJson.value=JSON.stringify(layout,null,2);
+    }).catch(report);
   };
   document.querySelector('#formatLayout').onclick=()=>{
     try{layoutJson.value=JSON.stringify(JSON.parse(layoutJson.value),null,2)}

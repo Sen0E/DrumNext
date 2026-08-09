@@ -36,7 +36,9 @@ def create_app(app_settings: Settings | None = None) -> FastAPI:
     app.state.events = EventHub(clock)
     app.state.command_lock = asyncio.Lock()
     app.state.scores = scores
-    app.state.layout = LayoutStore(resolved_settings.layout_file)
+    app.state.layout = LayoutStore(
+        resolved_settings.layout_file, resolved_settings.user_layout_file
+    )
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(playback_router, prefix="/api/v1")
     app.include_router(content_router, prefix="/api/v1")

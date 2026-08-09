@@ -11,3 +11,4 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 .env
+config/user-layout.json
