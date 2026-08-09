@@ -40,12 +40,27 @@
 <body>
 <main>
   <h1>DrumNext API 调试</h1>
-  <p class="hint">覆盖全部 16 个业务 REST API 和投影 WebSocket。页面不保存业务状态。文档：<a href="/docs">Swagger</a> · <a href="/redoc">ReDoc</a> · <a href="/openapi.json">OpenAPI JSON</a></p>
+  <p class="hint">覆盖全部 18 个业务 REST API 和投影 WebSocket。页面不保存业务状态。文档：<a href="/docs">Swagger</a> · <a href="/redoc">ReDoc</a> · <a href="/openapi.json">OpenAPI JSON</a></p>
 
   <section>
     <h2>系统</h2>
     <p class="endpoint">GET /api/v1/health</p>
     <div class="grid"><button id="health">检查服务健康状态</button></div>
+  </section>
+
+  <section>
+    <h2>投影视觉</h2>
+    <p class="endpoint">GET /api/v1/settings/projection-visuals · PUT /api/v1/settings/projection-visuals</p>
+    <label>缩圈线宽 <input id="approachRingWidth" type="number" min="2" max="40" step="1" value="14"><span>px</span></label>
+    <label>缩圈透明度 <input id="approachRingOpacity" type="number" min="0.05" max="1" step="0.05" value="0.22"><span>0–1</span></label>
+    <label>低音鼓面 <input id="lowPadScale" type="number" min="0.5" max="2" step="0.05" value="1"><span>倍率</span></label>
+    <label>中音鼓面 <input id="midPadScale" type="number" min="0.5" max="2" step="0.05" value="1"><span>倍率</span></label>
+    <label>高音鼓面 <input id="highPadScale" type="number" min="0.5" max="2" step="0.05" value="1"><span>倍率</span></label>
+    <label>中心鼓面 <input id="centerPadScale" type="number" min="0.5" max="2" step="0.05" value="1"><span>倍率</span></label>
+    <div class="grid">
+      <button id="loadProjectionVisuals">读取视觉参数</button>
+      <button id="saveProjectionVisuals">保存视觉参数</button>
+    </div>
   </section>
 
   <section>
@@ -126,6 +141,12 @@
   const scoresSelect=document.querySelector('#scores');
   const layoutJson=document.querySelector('#layoutJson');
   const endingStyle=document.querySelector('#endingStyle');
+  const approachRingWidth=document.querySelector('#approachRingWidth');
+  const approachRingOpacity=document.querySelector('#approachRingOpacity');
+  const lowPadScale=document.querySelector('#lowPadScale');
+  const midPadScale=document.querySelector('#midPadScale');
+  const highPadScale=document.querySelector('#highPadScale');
+  const centerPadScale=document.querySelector('#centerPadScale');
   const socketOutput=document.querySelector('#socketOutput');
   const socketState=document.querySelector('#socketState');
   const connectSocket=document.querySelector('#connectSocket');
@@ -255,6 +276,31 @@
     ).catch(report);
   };
 
+  const loadProjectionVisuals=async(present=true)=>{
+    const settings=await request(api+'/settings/projection-visuals',{},present);
+    approachRingWidth.value=String(settings.approachRingWidth);
+    approachRingOpacity.value=String(settings.approachRingOpacity);
+    lowPadScale.value=String(settings.lowPadScale);
+    midPadScale.value=String(settings.midPadScale);
+    highPadScale.value=String(settings.highPadScale);
+    centerPadScale.value=String(settings.centerPadScale);
+    return settings;
+  };
+  document.querySelector('#loadProjectionVisuals').onclick=()=>loadProjectionVisuals().catch(report);
+  document.querySelector('#saveProjectionVisuals').onclick=()=>{
+    request(
+      api+'/settings/projection-visuals',
+      jsonOptions('PUT',{
+        approachRingWidth:Number(approachRingWidth.value),
+        approachRingOpacity:Number(approachRingOpacity.value),
+        lowPadScale:Number(lowPadScale.value),
+        midPadScale:Number(midPadScale.value),
+        highPadScale:Number(highPadScale.value),
+        centerPadScale:Number(centerPadScale.value)
+      })
+    ).then(loadProjectionVisuals).catch(report);
+  };
+
   const appendSocket=(label,value)=>{
     const stamp=new Date().toLocaleTimeString();
     const detail=typeof value==='string'?value:JSON.stringify(value,null,2);
@@ -307,7 +353,8 @@
     request(api+'/playback',{},false),
     loadScores(false),
     loadLayout(false),
-    loadEndingStyle(false)
+    loadEndingStyle(false),
+    loadProjectionVisuals(false)
   ]).then(([playback])=>{
     applyPlayback(playback);
   }).catch(report);

@@ -13,11 +13,20 @@ const layout = {
   pads: [{ noteKey: "low_1", x: 0.5, y: 0.5, radius: 0.05, color: "#45A3FF", label: "1", octaveLabel: "L" }]
 };
 const endingAnimation = { style: "calm" };
+const projectionVisuals = {
+  approachRingWidth: 14,
+  approachRingOpacity: 0.22,
+  lowPadScale: 1,
+  midPadScale: 1,
+  highPadScale: 1,
+  centerPadScale: 1
+};
 
 function responseBody(path: string): object {
   if (path.includes("scores")) return score;
   if (path.includes("layout")) return layout;
   if (path.includes("ending-animation")) return endingAnimation;
+  if (path.includes("projection-visuals")) return projectionVisuals;
   return playback;
 }
 
@@ -33,6 +42,8 @@ describe("ContentClient", () => {
     expect(content.notes[0]?.id).toBe("n-1");
     expect(content.pads[0]?.color).toBe(0x45a3ff);
     expect(content.endingAnimationStyle).toBe("calm");
+    expect(content.projectionVisualSettings.approachRingWidth).toBe(14);
+    expect(content.projectionVisualSettings.approachRingOpacity).toBe(0.22);
   });
 
   it("rejects a score note absent from the layout", async () => {

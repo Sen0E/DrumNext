@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     layout_file: Path = PROJECT_ROOT / "config" / "default-layout.json"
     user_layout_file: Path = PROJECT_ROOT / "config" / "user-layout.json"
     ending_animation_file: Path = PROJECT_ROOT / "config" / "ending-animation.json"
+    projection_visuals_file: Path = PROJECT_ROOT / "config" / "projection-visuals.json"
     default_score_id: str = "大鱼"
 
 

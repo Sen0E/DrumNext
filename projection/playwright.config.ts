@@ -12,7 +12,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "DRUMNEXT_ENDING_ANIMATION_FILE=/tmp/drumnext-e2e-ending-animation.json uv run uvicorn drumnext.main:app --host 127.0.0.1 --port 18000",
+      command: "DRUMNEXT_ENDING_ANIMATION_FILE=/tmp/drumnext-e2e-ending-animation.json DRUMNEXT_PROJECTION_VISUALS_FILE=/tmp/drumnext-e2e-projection-visuals.json uv run uvicorn drumnext.main:app --host 127.0.0.1 --port 18000",
       cwd: fileURLToPath(new URL("..", import.meta.url)),
       url: "http://127.0.0.1:18000/api/v1/health",
       reuseExistingServer: false

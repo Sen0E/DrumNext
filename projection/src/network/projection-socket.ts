@@ -71,6 +71,7 @@ export class ProjectionSocket {
       } else if (
         message.type === "layout.changed"
         || message.type === "ending_animation.changed"
+        || message.type === "projection_visuals.changed"
       ) {
         this.onContentChanged();
       }

@@ -89,3 +89,18 @@ class EndingAnimationSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     style: Literal["calm", "spectacular"] = "calm"
+
+
+class ProjectionVisualSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    approach_ring_width: float = Field(
+        default=14, alias="approachRingWidth", ge=2, le=40
+    )
+    approach_ring_opacity: float = Field(
+        default=0.22, alias="approachRingOpacity", ge=0.05, le=1
+    )
+    low_pad_scale: float = Field(default=1, alias="lowPadScale", ge=0.5, le=2)
+    mid_pad_scale: float = Field(default=1, alias="midPadScale", ge=0.5, le=2)
+    high_pad_scale: float = Field(default=1, alias="highPadScale", ge=0.5, le=2)
+    center_pad_scale: float = Field(default=1, alias="centerPadScale", ge=0.5, le=2)

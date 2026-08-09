@@ -1,5 +1,9 @@
 import { Container, Graphics, Text } from "pixi.js";
 import type { DemoNote, PadConfig } from "../config/demo-content";
+import {
+  DEFAULT_PROJECTION_VISUAL_SETTINGS,
+  type ProjectionVisualSettings
+} from "../config/projection-visual-settings";
 import { linearProgress, noteVisualState } from "../playback/timeline";
 import {
   ENDING_ANIMATION_DURATION_MS,
@@ -17,7 +21,6 @@ import {
 import type { SceneLayers } from "./layers";
 
 const APPROACH_START_RADIUS = 180;
-const APPROACH_RING_WIDTH = 14;
 const PARTICLES_PER_PAD = 10;
 
 interface PadView {
@@ -53,6 +56,7 @@ export class DemoScene {
   readonly #endingStarburst: Graphics;
   readonly #endingFlash: Graphics;
   readonly #endingStyle: EndingAnimationStyle;
+  readonly #visualSettings: ProjectionVisualSettings;
   readonly #idleSeed: number;
   readonly #idleCenter: PadView | undefined;
   readonly #idleWave: Graphics;
@@ -68,12 +72,14 @@ export class DemoScene {
     width: number,
     height: number,
     endingStyle: EndingAnimationStyle = "calm",
+    visualSettings: ProjectionVisualSettings = DEFAULT_PROJECTION_VISUAL_SETTINGS,
     idleSeed = 0
   ) {
     this.#durationMs = durationMs;
     this.#width = width;
     this.#height = height;
     this.#endingStyle = endingStyle;
+    this.#visualSettings = visualSettings;
     this.#idleSeed = idleSeed;
     this.#drawBackground(layers.background, width, height);
     this.#pads = new Map(pads.map((config) => {
@@ -91,7 +97,7 @@ export class DemoScene {
       if (pad === undefined) throw new Error(`Unknown noteKey: ${note.noteKey}`);
       const ring = new Graphics()
         .circle(0, 0, APPROACH_START_RADIUS)
-        .stroke({ width: APPROACH_RING_WIDTH, color: pad.config.color });
+        .stroke({ width: visualSettings.approachRingWidth, color: pad.config.color });
       ring.position.set(pad.x, pad.y);
       ring.visible = false;
       layers.approaches.addChild(ring);
@@ -157,7 +163,9 @@ export class DemoScene {
         const progress = linearProgress(state.approachProgress);
         const radius = APPROACH_START_RADIUS + (approach.pad.radius - APPROACH_START_RADIUS) * progress;
         approach.ring.scale.set(radius / APPROACH_START_RADIUS);
-        approach.ring.alpha = 0.22 + Math.max(0, (state.approachProgress - 0.8) / 0.2) * 0.78;
+        const hitEmphasis = Math.max(0, (state.approachProgress - 0.8) / 0.2);
+        const baseOpacity = this.#visualSettings.approachRingOpacity;
+        approach.ring.alpha = baseOpacity + hitEmphasis * (1 - baseOpacity);
       }
       if (state.hitVisible) this.#updateHit(approach.pad, state.hitProgress, approach.note.velocity);
     }
@@ -187,7 +195,7 @@ export class DemoScene {
   #createPad(layers: SceneLayers, config: PadConfig, width: number, height: number): PadView {
     const x = config.x * width;
     const y = config.y * height;
-    const radius = config.radius * height;
+    const radius = config.radius * height * this.#padScale(config);
     const face = new Graphics()
       .circle(0, 0, radius)
       .fill({ color: 0x0d2034, alpha: 0.96 })
@@ -243,6 +251,16 @@ export class DemoScene {
       highlight,
       particles
     };
+  }
+
+  #padScale(config: PadConfig): number {
+    if (config.noteKey.endsWith("_center")) {
+      return this.#visualSettings.centerPadScale;
+    }
+    if (config.octaveLabel === "L") return this.#visualSettings.lowPadScale;
+    if (config.octaveLabel === "M") return this.#visualSettings.midPadScale;
+    if (config.octaveLabel === "H") return this.#visualSettings.highPadScale;
+    return 1;
   }
 
   #createIdleComets(

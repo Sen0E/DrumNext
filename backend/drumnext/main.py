@@ -17,7 +17,10 @@ from drumnext.playback.clock import SystemMonotonicClock
 from drumnext.playback.scheduling import select_note_window
 from drumnext.playback.service import PlaybackService
 from drumnext.storage.content import ContentNotFoundError, LayoutStore, ScoreStore
-from drumnext.storage.settings import EndingAnimationSettingsStore
+from drumnext.storage.settings import (
+    EndingAnimationSettingsStore,
+    ProjectionVisualSettingsStore,
+)
 from drumnext.transport.events import EventHub
 
 
@@ -43,6 +46,9 @@ def create_app(app_settings: Settings | None = None) -> FastAPI:
     )
     app.state.ending_animation = EndingAnimationSettingsStore(
         resolved_settings.ending_animation_file
+    )
+    app.state.projection_visuals = ProjectionVisualSettingsStore(
+        resolved_settings.projection_visuals_file
     )
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(playback_router, prefix="/api/v1")

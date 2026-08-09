@@ -234,6 +234,8 @@ curl -X POST http://localhost:8000/api/v1/playback/speed \
 | `POST` | `/api/v1/layout/reset`   | 删除用户布局并恢复默认布局   |
 | `GET` | `/api/v1/settings/ending-animation` | 获取结束动画风格 |
 | `PUT` | `/api/v1/settings/ending-animation` | 设置并持久化结束动画风格 |
+| `GET` | `/api/v1/settings/projection-visuals` | 获取缩圈与鼓面尺寸参数 |
+| `PUT` | `/api/v1/settings/projection-visuals` | 设置并持久化投影视觉参数 |
 
 结束动画支持宁静型 `calm` 和华丽型 `spectacular`。设置成功后会广播
 `ending_animation.changed`，投影端立即切换，并将选择保存到配置文件。
@@ -242,6 +244,25 @@ curl -X POST http://localhost:8000/api/v1/playback/speed \
 curl -X PUT http://localhost:8000/api/v1/settings/ending-animation \
   -H 'Content-Type: application/json' \
   -d '{"style":"spectacular"}'
+```
+
+投影视觉参数中的鼓面尺寸使用倍率，会叠加在当前布局的 `radius` 上；中心鼓面
+使用独立倍率，不再叠加低音倍率。缩圈线宽范围为 2–40 设计像素，初始透明度范围
+为 0.05–1.0，尺寸倍率范围为 0.5–2.0。缩圈临近命中时仍会平滑增强到完全不透明。
+保存成功后写入 `config/projection-visuals.json`，并广播
+`projection_visuals.changed` 让投影端立即重建场景。
+
+```bash
+curl -X PUT http://localhost:8000/api/v1/settings/projection-visuals \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "approachRingWidth": 18,
+    "approachRingOpacity": 0.65,
+    "lowPadScale": 1.1,
+    "midPadScale": 1.0,
+    "highPadScale": 0.95,
+    "centerPadScale": 1.2
+  }'
 ```
 
 不存在的乐谱使用稳定错误结构：
@@ -296,6 +317,7 @@ playback.speed_changed
 score.changed
 layout.changed
 ending_animation.changed
+projection_visuals.changed
 notes.scheduled
 clock.pong
 ```
@@ -432,6 +454,7 @@ low_3_center
 | `DRUMNEXT_LAYOUT_FILE`      | `<root>/config/default-layout.json` | 默认布局文件       |
 | `DRUMNEXT_USER_LAYOUT_FILE` | `<root>/config/user-layout.json`   | 用户布局文件       |
 | `DRUMNEXT_ENDING_ANIMATION_FILE` | `<root>/config/ending-animation.json` | 结束动画配置文件 |
+| `DRUMNEXT_PROJECTION_VISUALS_FILE` | `<root>/config/projection-visuals.json` | 投影视觉配置文件 |
 | `DRUMNEXT_DEFAULT_SCORE_ID` | `大鱼`                              | 后端启动时默认乐谱 |
 
 所有默认路径都根据代码文件位置解析，不依赖进程启动时的当前目录。

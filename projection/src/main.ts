@@ -68,6 +68,7 @@ async function start(): Promise<void> {
     DESIGN_WIDTH,
     DESIGN_HEIGHT,
     initialContent.endingAnimationStyle,
+    initialContent.projectionVisualSettings,
     idleSeed
   );
   if (fixedPreview) {
@@ -98,6 +99,7 @@ async function start(): Promise<void> {
         DESIGN_WIDTH,
         DESIGN_HEIGHT,
         content.endingAnimationStyle,
+        content.projectionVisualSettings,
         idleSeed
       );
     }).catch((error: unknown) => console.error("projection.content_reload_failed", error));

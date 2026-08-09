@@ -1,5 +1,20 @@
 import { expect, test } from "@playwright/test";
 
+const DEFAULT_PROJECTION_VISUALS = {
+  approachRingWidth: 14,
+  approachRingOpacity: 0.22,
+  lowPadScale: 1,
+  midPadScale: 1,
+  highPadScale: 1,
+  centerPadScale: 1
+};
+
+test.beforeAll(async ({ request }) => {
+  await request.put("/api/v1/settings/projection-visuals", {
+    data: DEFAULT_PROJECTION_VISUALS
+  });
+});
+
 test("renders the deterministic approach and hit scene", async ({ page }) => {
   await page.goto("/?timeMs=3700");
   const canvas = page.getByLabel("DrumNext WebGL2 场景");
@@ -27,6 +42,35 @@ test("renders the spectacular ending style selected through the API", async ({ p
   await request.put("/api/v1/settings/ending-animation", {
     data: { style: "calm" }
   });
+});
+
+test("applies projection visual settings selected through the API", async ({ page, request }) => {
+  const settingsUrl = "/api/v1/settings/projection-visuals";
+  const customized = {
+    approachRingWidth: 22,
+    approachRingOpacity: 0.7,
+    lowPadScale: 1.18,
+    midPadScale: 0.92,
+    highPadScale: 1.08,
+    centerPadScale: 1.3
+  };
+
+  try {
+    const updated = await request.put(settingsUrl, { data: customized });
+    expect(await updated.json()).toEqual(customized);
+    await page.goto("/?timeMs=3700");
+    const canvas = page.getByLabel("DrumNext WebGL2 场景");
+    await expect(canvas).toBeVisible();
+    const customizedFrame = await canvas.screenshot({ animations: "disabled" });
+
+    await request.put(settingsUrl, { data: DEFAULT_PROJECTION_VISUALS });
+    await page.reload();
+    await expect(canvas).toBeVisible();
+    const restoredFrame = await canvas.screenshot({ animations: "disabled" });
+    expect(customizedFrame.equals(restoredFrame)).toBe(false);
+  } finally {
+    await request.put(settingsUrl, { data: DEFAULT_PROJECTION_VISUALS });
+  }
 });
 
 test("renders the ripple and randomized chase idle phases", async ({ page }) => {
@@ -64,6 +108,9 @@ test("FastAPI hosts a working API debug interface", async ({ page }) => {
   await expect(page.locator("#output")).toContainText('"status": "playing"');
   await page.getByRole("button", { name: "读取当前布局" }).click();
   await expect(page.getByLabel("布局 JSON")).toHaveValue(/"schemaVersion": 1/);
+  await page.getByRole("button", { name: "读取视觉参数" }).click();
+  await expect(page.getByLabel("缩圈线宽")).toHaveValue("14");
+  await expect(page.getByLabel("缩圈透明度")).toHaveValue("0.22");
 });
 
 test("loads the score selected through FastAPI", async ({ page, request }) => {
