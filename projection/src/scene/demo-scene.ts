@@ -2,11 +2,18 @@ import { Container, Graphics, Text } from "pixi.js";
 import type { DemoNote, PadConfig } from "../config/demo-content";
 import { linearProgress, noteVisualState } from "../playback/timeline";
 import {
+  ENDING_ANIMATION_DURATION_MS,
   endingVisualState,
   segment,
   type EndingAnimationStyle,
   type EndingVisualState
 } from "./ending-animation";
+import {
+  IDLE_COMET_COUNT,
+  idleCometVisualState,
+  idlePadVisualState,
+  idleRippleVisualStates
+} from "./idle-animation";
 import type { SceneLayers } from "./layers";
 
 const APPROACH_START_RADIUS = 180;
@@ -18,8 +25,15 @@ interface PadView {
   readonly y: number;
   readonly radius: number;
   readonly group: Container;
+  readonly idleFlow: Graphics;
+  readonly idleCoreFlow: Graphics;
   readonly highlight: Graphics;
   readonly particles: readonly Graphics[];
+}
+
+interface IdleComet {
+  readonly graphic: Graphics;
+  readonly index: number;
 }
 
 interface ApproachView {
@@ -38,6 +52,10 @@ export class DemoScene {
   readonly #endingStarburst: Graphics;
   readonly #endingFlash: Graphics;
   readonly #endingStyle: EndingAnimationStyle;
+  readonly #idleSeed: number;
+  readonly #idleCenter: PadView | undefined;
+  readonly #idleWave: Graphics;
+  readonly #idleComets: readonly IdleComet[];
   readonly #width: number;
   readonly #height: number;
 
@@ -48,17 +66,25 @@ export class DemoScene {
     durationMs: number,
     width: number,
     height: number,
-    endingStyle: EndingAnimationStyle = "calm"
+    endingStyle: EndingAnimationStyle = "calm",
+    idleSeed = 0
   ) {
     this.#durationMs = durationMs;
     this.#width = width;
     this.#height = height;
     this.#endingStyle = endingStyle;
+    this.#idleSeed = idleSeed;
     this.#drawBackground(layers.background, width, height);
     this.#pads = new Map(pads.map((config) => {
       const pad = this.#createPad(layers, config, width, height);
       return [config.noteKey, pad];
     }));
+    this.#idleCenter = this.#nearestPadToCenter(width, height);
+    this.#idleWave = new Graphics();
+    this.#idleWave.visible = false;
+    this.#idleWave.blendMode = "add";
+    layers.overlay.addChild(this.#idleWave);
+    this.#idleComets = this.#createIdleComets(layers.overlay, pads);
     this.#approaches = notes.map((note) => {
       const pad = this.#pads.get(note.noteKey);
       if (pad === undefined) throw new Error(`Unknown noteKey: ${note.noteKey}`);
@@ -99,10 +125,22 @@ export class DemoScene {
     );
   }
 
-  update(playbackTimeMs: number, endingElapsedMs?: number): void {
+  update(
+    playbackTimeMs: number,
+    endingElapsedMs?: number,
+    idleElapsedMs?: number
+  ): void {
     this.#resetVisuals();
     if (endingElapsedMs !== undefined) {
+      if (endingElapsedMs >= ENDING_ANIMATION_DURATION_MS) {
+        this.#updateIdle(endingElapsedMs - ENDING_ANIMATION_DURATION_MS);
+        return;
+      }
       this.#updateEnding(endingElapsedMs);
+      return;
+    }
+    if (idleElapsedMs !== undefined) {
+      this.#updateIdle(idleElapsedMs);
       return;
     }
     if (playbackTimeMs >= this.#durationMs) return;
@@ -128,6 +166,8 @@ export class DemoScene {
     for (const pad of this.#pads.values()) {
       pad.group.alpha = 1;
       pad.group.scale.set(1);
+      pad.idleFlow.visible = false;
+      pad.idleCoreFlow.visible = false;
       pad.highlight.visible = false;
       pad.highlight.scale.set(1);
       for (const particle of pad.particles) particle.visible = false;
@@ -139,6 +179,8 @@ export class DemoScene {
     this.#endingHalo.visible = false;
     this.#endingStarburst.visible = false;
     this.#endingFlash.visible = false;
+    this.#idleWave.visible = false;
+    for (const comet of this.#idleComets) comet.graphic.visible = false;
   }
 
   #createPad(layers: SceneLayers, config: PadConfig, width: number, height: number): PadView {
@@ -163,7 +205,17 @@ export class DemoScene {
     octave.position.y = radius * 0.55;
     const group = new Container();
     group.position.set(x, y);
-    group.addChild(face, inner, label, octave);
+    const idleFlow = new Graphics()
+      .arc(0, 0, radius * 1.1, -0.52, 1.58)
+      .stroke({ width: 11, color: config.color });
+    idleFlow.visible = false;
+    idleFlow.blendMode = "add";
+    const idleCoreFlow = new Graphics()
+      .arc(0, 0, radius * 1.1, -0.28, 0.92)
+      .stroke({ width: 4, color: 0xffffff });
+    idleCoreFlow.visible = false;
+    idleCoreFlow.blendMode = "add";
+    group.addChild(face, inner, label, octave, idleFlow, idleCoreFlow);
     layers.drums.addChild(group);
 
     const highlight = new Graphics().circle(0, 0, radius * 1.12).fill({ color: config.color });
@@ -179,7 +231,96 @@ export class DemoScene {
       layers.hits.addChild(particle);
       return particle;
     });
-    return { config, x, y, radius, group, highlight, particles };
+    return {
+      config,
+      x,
+      y,
+      radius,
+      group,
+      idleFlow,
+      idleCoreFlow,
+      highlight,
+      particles
+    };
+  }
+
+  #createIdleComets(
+    layer: Container,
+    pads: readonly PadConfig[]
+  ): readonly IdleComet[] {
+    return Array.from({ length: IDLE_COMET_COUNT }, (_, index) => {
+      const color = pads[index % pads.length]?.color ?? 0x82b7d8;
+      const graphic = new Graphics();
+      graphic.circle(0, 0, 6.5).fill({ color: 0xffffff, alpha: 0.96 });
+      graphic.circle(-10, 0, 5.2).fill({ color, alpha: 0.8 });
+      graphic.circle(-19, 0, 3.8).fill({ color, alpha: 0.58 });
+      graphic.circle(-27, 0, 2.4).fill({ color, alpha: 0.34 });
+      graphic.visible = false;
+      graphic.blendMode = "add";
+      layer.addChild(graphic);
+      return { graphic, index };
+    });
+  }
+
+  #updateIdle(elapsedMs: number): void {
+    const centerX = this.#width / 2;
+    const centerY = this.#height / 2;
+    const distances = [...this.#pads.values()].map((pad) =>
+      Math.hypot(pad.x - centerX, pad.y - centerY)
+    );
+    const maxDistance = Math.max(1, ...distances);
+    for (const [index, pad] of [...this.#pads.values()].entries()) {
+      const angle = Math.atan2(pad.y - centerY, pad.x - centerX);
+      const clockwise = ((angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2))
+        / (Math.PI * 2);
+      const distance = Math.hypot(pad.x - centerX, pad.y - centerY) / maxDistance;
+      const state = idlePadVisualState(
+        elapsedMs,
+        index,
+        clockwise,
+        distance,
+        pad === this.#idleCenter,
+        this.#idleSeed
+      );
+      pad.group.scale.set(state.scale);
+      pad.idleFlow.visible = state.flowAlpha > 0;
+      pad.idleFlow.alpha = state.flowAlpha;
+      pad.idleFlow.rotation = state.flowRotation;
+      pad.idleCoreFlow.visible = state.coreFlowAlpha > 0;
+      pad.idleCoreFlow.alpha = state.coreFlowAlpha;
+      pad.idleCoreFlow.rotation = state.flowRotation;
+      if (state.glowAlpha > 0) {
+        pad.highlight.visible = true;
+        pad.highlight.alpha = state.glowAlpha;
+        pad.highlight.scale.set(1.04 + (state.scale - 1) * 2.1);
+      }
+    }
+
+    const ripples = idleRippleVisualStates(elapsedMs);
+    const center = this.#idleCenter;
+    if (center !== undefined && ripples.some((ripple) => ripple.alpha > 0)) {
+      this.#idleWave.clear();
+      for (const ripple of ripples) {
+        if (ripple.alpha <= 0) continue;
+        const radius = center.radius
+          + (maxDistance + center.radius) * ripple.progress;
+        this.#idleWave
+          .circle(center.x, center.y, radius)
+          .stroke({ width: 12, color: center.config.color, alpha: ripple.alpha * 0.72 })
+          .circle(center.x, center.y, radius)
+          .stroke({ width: 4, color: 0xffffff, alpha: ripple.alpha });
+      }
+      this.#idleWave.visible = true;
+    }
+
+    for (const comet of this.#idleComets) {
+      const state = idleCometVisualState(elapsedMs, comet.index, this.#idleSeed);
+      comet.graphic.visible = state.alpha > 0;
+      comet.graphic.alpha = state.alpha;
+      comet.graphic.position.set(state.x * this.#width, state.y * this.#height);
+      comet.graphic.scale.set(state.scale);
+      comet.graphic.rotation = state.rotation;
+    }
   }
 
   #updateEnding(elapsedMs: number): void {

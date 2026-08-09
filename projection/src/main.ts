@@ -43,6 +43,23 @@ async function start(): Promise<void> {
   const remotePlayback = new RemotePlayback();
   const initialContent = await contentClient.load();
   remotePlayback.apply(initialContent.playback);
+  const searchParameters = new URLSearchParams(window.location.search);
+  const fixedTimeParameter = searchParameters.get("timeMs");
+  const fixedTimeMs = fixedTimeParameter === null ? undefined : Number(fixedTimeParameter);
+  const endingTimeParameter = searchParameters.get("endingMs");
+  const endingTimeMs = endingTimeParameter === null ? undefined : Number(endingTimeParameter);
+  const idleTimeParameter = searchParameters.get("idleMs");
+  const idleTimeMs = idleTimeParameter === null ? undefined : Number(idleTimeParameter);
+  const fixedPreview = (
+    fixedTimeMs !== undefined && Number.isFinite(fixedTimeMs)
+  ) || (
+    endingTimeMs !== undefined && Number.isFinite(endingTimeMs)
+  ) || (
+    idleTimeMs !== undefined && Number.isFinite(idleTimeMs)
+  );
+  const idleSeed = fixedPreview
+    ? 0x4452_554d
+    : crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
   let scene = new DemoScene(
     layers,
     initialContent.pads,
@@ -50,22 +67,15 @@ async function start(): Promise<void> {
     initialContent.durationMs,
     DESIGN_WIDTH,
     DESIGN_HEIGHT,
-    initialContent.endingAnimationStyle
-  );
-  const searchParameters = new URLSearchParams(window.location.search);
-  const fixedTimeParameter = searchParameters.get("timeMs");
-  const fixedTimeMs = fixedTimeParameter === null ? undefined : Number(fixedTimeParameter);
-  const endingTimeParameter = searchParameters.get("endingMs");
-  const endingTimeMs = endingTimeParameter === null ? undefined : Number(endingTimeParameter);
-  const fixedPreview = (
-    fixedTimeMs !== undefined && Number.isFinite(fixedTimeMs)
-  ) || (
-    endingTimeMs !== undefined && Number.isFinite(endingTimeMs)
+    initialContent.endingAnimationStyle,
+    idleSeed
   );
   if (fixedPreview) {
     document.body.classList.add("fixed-preview");
     if (endingTimeMs !== undefined && Number.isFinite(endingTimeMs)) {
       scene.update(initialContent.durationMs, endingTimeMs);
+    } else if (idleTimeMs !== undefined && Number.isFinite(idleTimeMs)) {
+      scene.update(0, undefined, idleTimeMs);
     } else if (fixedTimeMs !== undefined) {
       scene.update(fixedTimeMs);
     }
@@ -87,7 +97,8 @@ async function start(): Promise<void> {
         content.durationMs,
         DESIGN_WIDTH,
         DESIGN_HEIGHT,
-        content.endingAnimationStyle
+        content.endingAnimationStyle,
+        idleSeed
       );
     }).catch((error: unknown) => console.error("projection.content_reload_failed", error));
   };
@@ -97,13 +108,18 @@ async function start(): Promise<void> {
 
   const stats = new FrameStats();
   const panel = new PerformancePanel();
+  let idleStartedAtMs: number | undefined;
   app.ticker.add(() => {
     const nowMs = performance.now();
     if (!fixedPreview) {
       const serverTimeMs = projectionSocket.clock.serverTime(nowMs);
+      const stopped = remotePlayback.snapshot.status === "stopped";
+      if (stopped) idleStartedAtMs ??= nowMs;
+      else idleStartedAtMs = undefined;
       scene.update(
         remotePlayback.positionAt(serverTimeMs),
-        remotePlayback.endingElapsedAt(serverTimeMs)
+        remotePlayback.endingElapsedAt(serverTimeMs),
+        idleStartedAtMs === undefined ? undefined : nowMs - idleStartedAtMs
       );
     }
     panel.update(stats.update(nowMs));

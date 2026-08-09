@@ -29,6 +29,23 @@ test("renders the spectacular ending style selected through the API", async ({ p
   });
 });
 
+test("renders the ripple and randomized chase idle phases", async ({ page }) => {
+  await page.goto("/?idleMs=2300");
+  const canvas = page.getByLabel("DrumNext WebGL2 场景");
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveScreenshot("idle-ripples-2300ms.png", {
+    animations: "disabled",
+    maxDiffPixelRatio: 0.01
+  });
+
+  await page.goto("/?idleMs=4000");
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveScreenshot("idle-layout-4000ms.png", {
+    animations: "disabled",
+    maxDiffPixelRatio: 0.01
+  });
+});
+
 test("controls playback only through FastAPI", async ({ request }) => {
   const started = await request.post("/api/v1/playback/play");
   expect(started.ok()).toBe(true);
@@ -59,7 +76,7 @@ test("loads the score selected through FastAPI", async ({ page, request }) => {
   await request.post("/api/v1/playback/score", { data: { scoreId: "大鱼" } });
 });
 
-test("plays the calm ending animation once and restores the static drums", async ({ page, request }) => {
+test("plays the calm ending animation once and transitions into idle drums", async ({ page, request }) => {
   await request.put("/api/v1/settings/ending-animation", { data: { style: "calm" } });
   await request.post("/api/v1/playback/score", { data: { scoreId: "sparse-demo" } });
   await request.post("/api/v1/playback/seek", { data: { positionMs: 4_000 } });
@@ -78,9 +95,10 @@ test("plays the calm ending animation once and restores the static drums", async
   const endingStarted = await canvas.screenshot({ animations: "disabled" });
   expect(endingStarted.equals(staticDrums)).toBe(false);
 
-  await page.waitForTimeout(5_650);
-  const restoredDrums = await canvas.screenshot({ animations: "disabled" });
-  expect(restoredDrums.equals(staticDrums)).toBe(true);
+  await page.waitForTimeout(6_850);
+  const idleDrums = await canvas.screenshot({ animations: "disabled" });
+  expect(idleDrums.equals(staticDrums)).toBe(false);
+  expect(idleDrums.equals(endingStarted)).toBe(false);
 
   await request.post("/api/v1/playback/stop");
   await request.post("/api/v1/playback/score", { data: { scoreId: "大鱼" } });
