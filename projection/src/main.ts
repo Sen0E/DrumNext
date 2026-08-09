@@ -68,7 +68,7 @@ async function start(): Promise<void> {
   window.addEventListener("beforeunload", () => projectionSocket.destroy(), { once: true });
 
   const stats = new FrameStats();
-  const panel = new PerformancePanel(capability.renderer);
+  const panel = new PerformancePanel();
   app.ticker.add(() => {
     const nowMs = performance.now();
     if (fixedTimeMs === undefined || !Number.isFinite(fixedTimeMs)) {

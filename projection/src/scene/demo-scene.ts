@@ -51,7 +51,6 @@ export class DemoScene {
       layers.approaches.addChild(ring);
       return { note, ring, pad };
     });
-    this.#createOverlay(layers.overlay, width);
   }
 
   update(playbackTimeMs: number): void {
@@ -131,15 +130,5 @@ export class DemoScene {
   #drawBackground(layer: Container, width: number, height: number): void {
     const backdrop = new Graphics().rect(0, 0, width, height).fill({ color: 0x000000 });
     layer.addChild(backdrop);
-  }
-
-  #createOverlay(layer: Container, width: number): void {
-    const title = new Text({
-      text: "DRUMNEXT  ·  VISUAL PROTOTYPE",
-      style: { fill: 0x82b7d8, fontFamily: "sans-serif", fontSize: 22, letterSpacing: 5 }
-    });
-    title.anchor.set(0.5, 0);
-    title.position.set(width / 2, 42);
-    layer.addChild(title);
   }
 }
