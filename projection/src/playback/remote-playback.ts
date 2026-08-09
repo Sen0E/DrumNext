@@ -24,8 +24,16 @@ export class RemotePlayback {
     return Math.min(snapshot.durationMs, Math.max(0, snapshot.anchorPositionMs + elapsedMs));
   }
 
+  endingElapsedAt(serverTimeMs: number): number | undefined {
+    const snapshot = this.#snapshot;
+    if (snapshot.status !== "playing") return undefined;
+    const remainingMs = Math.max(0, snapshot.durationMs - snapshot.anchorPositionMs);
+    const endingStartedAtMs = snapshot.anchorClockMs + remainingMs / snapshot.speed;
+    if (serverTimeMs < endingStartedAtMs) return undefined;
+    return serverTimeMs - endingStartedAtMs;
+  }
+
   get snapshot(): PlaybackSnapshot {
     return this.#snapshot;
   }
 }
-

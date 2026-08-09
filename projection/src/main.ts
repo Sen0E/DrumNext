@@ -73,7 +73,10 @@ async function start(): Promise<void> {
     const nowMs = performance.now();
     if (fixedTimeMs === undefined || !Number.isFinite(fixedTimeMs)) {
       const serverTimeMs = projectionSocket.clock.serverTime(nowMs);
-      scene.update(remotePlayback.positionAt(serverTimeMs));
+      scene.update(
+        remotePlayback.positionAt(serverTimeMs),
+        remotePlayback.endingElapsedAt(serverTimeMs)
+      );
     }
     panel.update(stats.update(nowMs));
   });

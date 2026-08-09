@@ -40,6 +40,32 @@ test("loads the score selected through FastAPI", async ({ page, request }) => {
   await request.post("/api/v1/playback/score", { data: { scoreId: "大鱼" } });
 });
 
+test("plays the calm ending animation once and restores the static drums", async ({ page, request }) => {
+  await request.post("/api/v1/playback/score", { data: { scoreId: "sparse-demo" } });
+  await request.post("/api/v1/playback/seek", { data: { positionMs: 4_000 } });
+  await page.goto("/");
+  const canvas = page.getByLabel("DrumNext WebGL2 场景");
+  await expect(canvas).toBeVisible();
+  await page.addStyleTag({ content: ".performance-panel { display: none !important; }" });
+  const staticDrums = await canvas.screenshot({ animations: "disabled" });
+
+  await request.post("/api/v1/playback/play");
+  await request.post("/api/v1/playback/seek", { data: { positionMs: 4_000 } });
+  await page.reload();
+  await expect(canvas).toBeVisible();
+  await page.addStyleTag({ content: ".performance-panel { display: none !important; }" });
+  await page.waitForTimeout(650);
+  const endingStarted = await canvas.screenshot({ animations: "disabled" });
+  expect(endingStarted.equals(staticDrums)).toBe(false);
+
+  await page.waitForTimeout(5_650);
+  const restoredDrums = await canvas.screenshot({ animations: "disabled" });
+  expect(restoredDrums.equals(staticDrums)).toBe(true);
+
+  await request.post("/api/v1/playback/stop");
+  await request.post("/api/v1/playback/score", { data: { scoreId: "大鱼" } });
+});
+
 test("sends snapshot before the scheduled note window", async ({ page }) => {
   await page.goto("/?timeMs=0");
   const messageTypes = await page.evaluate(async () => {
