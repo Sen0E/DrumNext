@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath, URL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ContentClient } from "../src/network/content-client";
 
@@ -13,14 +15,13 @@ const layout = {
   pads: [{ noteKey: "low_1", x: 0.5, y: 0.5, radius: 0.05, color: "#45A3FF", label: "1", octaveLabel: "L" }]
 };
 const endingAnimation = { style: "calm" };
-const projectionVisuals = {
-  approachRingWidth: 14,
-  approachRingOpacity: 0.22,
-  lowPadScale: 1,
-  midPadScale: 1,
-  highPadScale: 1,
-  centerPadScale: 1
-};
+const projectionVisualsFixture = fileURLToPath(new URL(
+  "../../shared/fixtures/projection-visual-settings.json",
+  import.meta.url
+));
+const projectionVisuals = JSON.parse(
+  readFileSync(projectionVisualsFixture, "utf8")
+) as object;
 
 function responseBody(path: string): object {
   if (path.includes("scores")) return score;
@@ -42,6 +43,7 @@ describe("ContentClient", () => {
     expect(content.notes[0]?.id).toBe("n-1");
     expect(content.pads[0]?.color).toBe(0x45a3ff);
     expect(content.endingAnimationStyle).toBe("calm");
+    expect(content.projectionVisualSettings.showPerformanceInfo).toBe(false);
     expect(content.projectionVisualSettings.approachRingWidth).toBe(14);
     expect(content.projectionVisualSettings.approachRingOpacity).toBe(0.22);
   });
@@ -54,5 +56,15 @@ describe("ContentClient", () => {
       return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
     }));
     await expect(new ContentClient().load()).rejects.toThrow("noteKey");
+  });
+
+  it("rejects a non-boolean performance information setting", async () => {
+    vi.stubGlobal("fetch", vi.fn((path: string) => {
+      const body = path.includes("projection-visuals")
+        ? { ...projectionVisuals, showPerformanceInfo: "false" }
+        : responseBody(path);
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+    }));
+    await expect(new ContentClient().load()).rejects.toThrow("性能信息");
   });
 });

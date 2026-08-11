@@ -562,6 +562,7 @@ GET /api/v1/settings/projection-visuals
 
 ```json
 {
+  "showPerformanceInfo": false,
   "approachRingWidth": 14,
   "approachRingOpacity": 0.22,
   "lowPadScale": 1,
@@ -578,6 +579,7 @@ PUT /api/v1/settings/projection-visuals
 Content-Type: application/json
 
 {
+  "showPerformanceInfo": true,
   "approachRingWidth": 18,
   "approachRingOpacity": 0.65,
   "lowPadScale": 1.1,
@@ -589,6 +591,7 @@ Content-Type: application/json
 
 | 字段                    | 类型       | 范围        | 默认值   | 说明             |
 | ----------------------- | ---------- | ----------- | -------- | ---------------- |
+| `showPerformanceInfo` | `boolean` | `true/false` | `false` | 显示左上角 FPS 信息 |
 | `approachRingWidth`   | `number` | `2..40`   | `14`   | 接近提示环线宽   |
 | `approachRingOpacity` | `number` | `0.05..1` | `0.22` | 接近提示环透明度 |
 | `lowPadScale`         | `number` | `0.5..2`  | `1`    | 低音鼓面尺寸倍率 |
@@ -882,6 +885,7 @@ export interface EndingAnimationSettings {
 }
 
 export interface ProjectionVisualSettings {
+  showPerformanceInfo: boolean;
   approachRingWidth: number;
   approachRingOpacity: number;
   lowPadScale: number;

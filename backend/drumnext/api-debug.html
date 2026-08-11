@@ -23,6 +23,7 @@
     button:disabled { cursor:not-allowed; opacity:.55 }
     label { display:grid; grid-template-columns:90px 1fr 70px; align-items:center; gap:10px; margin:14px 0 }
     input[type=range] { width:100%; accent-color:#40c8ff; background:transparent; border:0 }
+    input[type=checkbox] { width:22px; min-height:22px; accent-color:#40c8ff }
     textarea { display:block; width:100%; min-height:280px; padding:12px; resize:vertical; font:13px/1.45 ui-monospace,monospace }
     pre { max-height:360px; overflow:auto; margin:0; padding:14px; background:#000; color:#9ce1ff; border-radius:8px; white-space:pre-wrap; overflow-wrap:anywhere }
     a { color:#61cef7 }
@@ -51,6 +52,7 @@
   <section>
     <h2>投影视觉</h2>
     <p class="endpoint">GET /api/v1/settings/projection-visuals · PUT /api/v1/settings/projection-visuals</p>
+    <label>性能信息 <input id="showPerformanceInfo" type="checkbox" aria-label="显示性能信息"><span>FPS</span></label>
     <label>缩圈线宽 <input id="approachRingWidth" type="number" min="2" max="40" step="1" value="14"><span>px</span></label>
     <label>缩圈透明度 <input id="approachRingOpacity" type="number" min="0.05" max="1" step="0.05" value="0.22"><span>0–1</span></label>
     <label>低音鼓面 <input id="lowPadScale" type="number" min="0.5" max="2" step="0.05" value="1"><span>倍率</span></label>
@@ -141,6 +143,7 @@
   const scoresSelect=document.querySelector('#scores');
   const layoutJson=document.querySelector('#layoutJson');
   const endingStyle=document.querySelector('#endingStyle');
+  const showPerformanceInfo=document.querySelector('#showPerformanceInfo');
   const approachRingWidth=document.querySelector('#approachRingWidth');
   const approachRingOpacity=document.querySelector('#approachRingOpacity');
   const lowPadScale=document.querySelector('#lowPadScale');
@@ -278,6 +281,7 @@
 
   const loadProjectionVisuals=async(present=true)=>{
     const settings=await request(api+'/settings/projection-visuals',{},present);
+    showPerformanceInfo.checked=settings.showPerformanceInfo;
     approachRingWidth.value=String(settings.approachRingWidth);
     approachRingOpacity.value=String(settings.approachRingOpacity);
     lowPadScale.value=String(settings.lowPadScale);
@@ -291,6 +295,7 @@
     request(
       api+'/settings/projection-visuals',
       jsonOptions('PUT',{
+        showPerformanceInfo:showPerformanceInfo.checked,
         approachRingWidth:Number(approachRingWidth.value),
         approachRingOpacity:Number(approachRingOpacity.value),
         lowPadScale:Number(lowPadScale.value),

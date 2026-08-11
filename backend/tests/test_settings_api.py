@@ -7,6 +7,8 @@ from httpx import ASGITransport, AsyncClient
 from drumnext.config import Settings
 from drumnext.main import create_app
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 
 @pytest.mark.anyio
 async def test_ending_animation_defaults_to_calm_and_persists_updates(
@@ -64,7 +66,10 @@ async def test_projection_visuals_default_and_persist_updates(tmp_path: Path) ->
         projection_visuals_file=settings_path,
     )
     app = create_app(settings)
+    fixture_path = PROJECT_ROOT / "shared" / "fixtures" / "projection-visual-settings.json"
+    expected_defaults = json.loads(fixture_path.read_text(encoding="utf-8"))
     updated_payload = {
+        "showPerformanceInfo": True,
         "approachRingWidth": 18,
         "approachRingOpacity": 0.65,
         "lowPadScale": 1.1,
@@ -80,14 +85,7 @@ async def test_projection_visuals_default_and_persist_updates(tmp_path: Path) ->
             "/api/v1/settings/projection-visuals", json=updated_payload
         )
 
-    assert initial.json() == {
-        "approachRingWidth": 14,
-        "approachRingOpacity": 0.22,
-        "lowPadScale": 1,
-        "midPadScale": 1,
-        "highPadScale": 1,
-        "centerPadScale": 1,
-    }
+    assert initial.json() == expected_defaults
     assert updated.json() == updated_payload
     assert json.loads(settings_path.read_text(encoding="utf-8")) == updated_payload
 
@@ -116,6 +114,7 @@ async def test_projection_visuals_reject_out_of_range_values(tmp_path: Path) -> 
             "/api/v1/settings/projection-visuals",
             json={
                 "approachRingWidth": 100,
+                "showPerformanceInfo": False,
                 "approachRingOpacity": 0.22,
                 "lowPadScale": 1,
                 "midPadScale": 1,
@@ -127,6 +126,7 @@ async def test_projection_visuals_reject_out_of_range_values(tmp_path: Path) -> 
             "/api/v1/settings/projection-visuals",
             json={
                 "approachRingWidth": 14,
+                "showPerformanceInfo": False,
                 "approachRingOpacity": 0,
                 "lowPadScale": 1,
                 "midPadScale": 1,

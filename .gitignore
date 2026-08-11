@@ -9,6 +9,8 @@ __pycache__/
 coverage/
 playwright-report/
 test-results/
+logs/
+.runtime/
 *.tsbuildinfo
 .env
 config/user-layout.json

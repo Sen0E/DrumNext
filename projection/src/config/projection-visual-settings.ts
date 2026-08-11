@@ -1,4 +1,5 @@
 export interface ProjectionVisualSettings {
+  readonly showPerformanceInfo: boolean;
   readonly approachRingWidth: number;
   readonly approachRingOpacity: number;
   readonly lowPadScale: number;
@@ -8,6 +9,7 @@ export interface ProjectionVisualSettings {
 }
 
 export const DEFAULT_PROJECTION_VISUAL_SETTINGS: ProjectionVisualSettings = {
+  showPerformanceInfo: false,
   approachRingWidth: 14,
   approachRingOpacity: 0.22,
   lowPadScale: 1,

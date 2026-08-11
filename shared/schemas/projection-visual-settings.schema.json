@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "projection-visual-settings.schema.json",
+  "title": "DrumNext projection visual settings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "showPerformanceInfo",
+    "approachRingWidth",
+    "approachRingOpacity",
+    "lowPadScale",
+    "midPadScale",
+    "highPadScale",
+    "centerPadScale"
+  ],
+  "properties": {
+    "showPerformanceInfo": { "type": "boolean", "default": false },
+    "approachRingWidth": { "type": "number", "minimum": 2, "maximum": 40 },
+    "approachRingOpacity": { "type": "number", "minimum": 0.05, "maximum": 1 },
+    "lowPadScale": { "type": "number", "minimum": 0.5, "maximum": 2 },
+    "midPadScale": { "type": "number", "minimum": 0.5, "maximum": 2 },
+    "highPadScale": { "type": "number", "minimum": 0.5, "maximum": 2 },
+    "centerPadScale": { "type": "number", "minimum": 0.5, "maximum": 2 }
+  }
+}

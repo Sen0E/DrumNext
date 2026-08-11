@@ -60,6 +60,10 @@ async function start(): Promise<void> {
   const idleSeed = fixedPreview
     ? 0x4452_554d
     : crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
+  const stats = new FrameStats();
+  const panel = new PerformancePanel(
+    initialContent.projectionVisualSettings.showPerformanceInfo
+  );
   let scene = new DemoScene(
     layers,
     initialContent.pads,
@@ -91,6 +95,7 @@ async function start(): Promise<void> {
       app.stage.addChild(replacementLayers.root);
       layers = replacementLayers;
       remotePlayback.apply(content.playback);
+      panel.setVisible(content.projectionVisualSettings.showPerformanceInfo);
       scene = new DemoScene(
         replacementLayers,
         content.pads,
@@ -108,8 +113,6 @@ async function start(): Promise<void> {
   if (!fixedPreview) projectionSocket.connect();
   window.addEventListener("beforeunload", () => projectionSocket.destroy(), { once: true });
 
-  const stats = new FrameStats();
-  const panel = new PerformancePanel();
   let idleStartedAtMs: number | undefined;
   app.ticker.add(() => {
     const nowMs = performance.now();

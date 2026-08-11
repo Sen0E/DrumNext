@@ -94,6 +94,7 @@ class EndingAnimationSettings(BaseModel):
 class ProjectionVisualSettings(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
+    show_performance_info: bool = Field(default=False, alias="showPerformanceInfo")
     approach_ring_width: float = Field(
         default=14, alias="approachRingWidth", ge=2, le=40
     )

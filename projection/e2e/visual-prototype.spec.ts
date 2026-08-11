@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const DEFAULT_PROJECTION_VISUALS = {
+  showPerformanceInfo: false,
   approachRingWidth: 14,
   approachRingOpacity: 0.22,
   lowPadScale: 1,
@@ -47,6 +48,7 @@ test("renders the spectacular ending style selected through the API", async ({ p
 test("applies projection visual settings selected through the API", async ({ page, request }) => {
   const settingsUrl = "/api/v1/settings/projection-visuals";
   const customized = {
+    showPerformanceInfo: false,
     approachRingWidth: 22,
     approachRingOpacity: 0.7,
     lowPadScale: 1.18,
@@ -68,6 +70,24 @@ test("applies projection visual settings selected through the API", async ({ pag
     await expect(canvas).toBeVisible();
     const restoredFrame = await canvas.screenshot({ animations: "disabled" });
     expect(customizedFrame.equals(restoredFrame)).toBe(false);
+  } finally {
+    await request.put(settingsUrl, { data: DEFAULT_PROJECTION_VISUALS });
+  }
+});
+
+test("toggles the performance information through the API", async ({ page, request }) => {
+  const settingsUrl = "/api/v1/settings/projection-visuals";
+  try {
+    const enabled = { ...DEFAULT_PROJECTION_VISUALS, showPerformanceInfo: true };
+    await request.put(settingsUrl, { data: enabled });
+    await page.goto("/");
+
+    const panel = page.locator(".performance-panel");
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText("FPS");
+
+    await request.put(settingsUrl, { data: DEFAULT_PROJECTION_VISUALS });
+    await expect(panel).toBeHidden();
   } finally {
     await request.put(settingsUrl, { data: DEFAULT_PROJECTION_VISUALS });
   }
@@ -109,6 +129,7 @@ test("FastAPI hosts a working API debug interface", async ({ page }) => {
   await page.getByRole("button", { name: "读取当前布局" }).click();
   await expect(page.getByLabel("布局 JSON")).toHaveValue(/"schemaVersion": 1/);
   await page.getByRole("button", { name: "读取视觉参数" }).click();
+  await expect(page.getByLabel("显示性能信息")).not.toBeChecked();
   await expect(page.getByLabel("缩圈线宽")).toHaveValue("14");
   await expect(page.getByLabel("缩圈透明度")).toHaveValue("0.22");
 });

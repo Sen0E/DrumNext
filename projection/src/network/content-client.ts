@@ -64,6 +64,10 @@ export class ContentClient {
 function parseProjectionVisualSettings(
   value: Record<string, unknown>
 ): ProjectionVisualSettings {
+  const showPerformanceInfo = value.showPerformanceInfo;
+  if (typeof showPerformanceInfo !== "boolean") {
+    throw new Error("无效的性能信息显示设置");
+  }
   const approachRingWidth = finiteNumber(value, "approachRingWidth");
   const approachRingOpacity = finiteNumber(value, "approachRingOpacity");
   const lowPadScale = finiteNumber(value, "lowPadScale");
@@ -82,6 +86,7 @@ function parseProjectionVisualSettings(
     throw new Error("无效的鼓面尺寸倍率");
   }
   return {
+    showPerformanceInfo,
     approachRingWidth,
     approachRingOpacity,
     lowPadScale,

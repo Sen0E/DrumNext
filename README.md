@@ -172,6 +172,55 @@ http://localhost:5173
 
 Vite 会将 `/api` 和 `/ws` 代理到 `http://127.0.0.1:8000`。修改 Python 代码后需要重启后端；修改投影端代码通常会由 Vite 热更新。
 
+### 树莓派一键启动
+
+生产构建、Python 依赖和 `config/xiaozhi-mcp.json` 准备完成后，可同时启动
+FastAPI、独立 MCP 服务和 Chromium kiosk 投影页面：
+
+```bash
+chmod +x scripts/start-all.sh
+./scripts/start-all.sh
+```
+
+脚本会等待 FastAPI 健康检查成功后再打开 `http://127.0.0.1:8000`，日志写入
+`logs/`；按 `Ctrl+C` 会停止本次启动的浏览器、MCP 和 FastAPI 进程。调试时可使用
+普通窗口或不启动浏览器：
+
+```bash
+./scripts/start-all.sh --windowed
+./scripts/start-all.sh --no-browser
+```
+
+可通过 `DRUMNEXT_MCP_CONFIG`、`DRUMNEXT_PROJECTION_URL` 和
+`DRUMNEXT_BROWSER` 环境变量覆盖 MCP 配置、页面地址和浏览器程序路径。
+
+### 快捷同步到树莓派
+
+在开发机项目根目录运行下面的命令，会编译网页、同步生产运行文件，并在树莓派上执行
+`uv sync --frozen --no-dev`：
+
+```bash
+./scripts/sync-to-pi.sh pi@192.168.1.100
+```
+
+如果 SSH 已配置主机别名，也可以直接使用别名。远端路径默认是
+`/home/pi/DrumNext`，可通过参数修改：
+
+```bash
+./scripts/sync-to-pi.sh drum-pi --path /opt/drumnext
+```
+
+默认会同步 `user-layout.json`、结束动画、投影视觉设置和真实的
+`config/xiaozhi-mcp.json`；MCP 配置在远端会被设置为 `0600`。如果某次同步需要保留
+树莓派上的现场配置，可显式跳过：
+
+```bash
+./scripts/sync-to-pi.sh pi@192.168.1.100 --no-runtime-config --no-mcp-config
+```
+
+已有可用的 `dist` 时可添加 `--no-build`；不希望远端执行依赖同步时可添加
+`--no-deps`。
+
 ## 调试入口
 
 | 地址                                    | 用途                                 |
@@ -239,7 +288,7 @@ curl -X POST http://localhost:8000/api/v1/playback/speed \
 | `POST` | `/api/v1/layout/reset`   | 删除用户布局并恢复默认布局   |
 | `GET` | `/api/v1/settings/ending-animation` | 获取结束动画风格 |
 | `PUT` | `/api/v1/settings/ending-animation` | 设置并持久化结束动画风格 |
-| `GET` | `/api/v1/settings/projection-visuals` | 获取缩圈与鼓面尺寸参数 |
+| `GET` | `/api/v1/settings/projection-visuals` | 获取性能信息、缩圈与鼓面尺寸参数 |
 | `PUT` | `/api/v1/settings/projection-visuals` | 设置并持久化投影视觉参数 |
 
 结束动画支持宁静型 `calm` 和华丽型 `spectacular`。设置成功后会广播
@@ -251,7 +300,8 @@ curl -X PUT http://localhost:8000/api/v1/settings/ending-animation \
   -d '{"style":"spectacular"}'
 ```
 
-投影视觉参数中的鼓面尺寸使用倍率，会叠加在当前布局的 `radius` 上；中心鼓面
+投影视觉参数中的 `showPerformanceInfo` 控制左上角 FPS 信息，默认为 `false`。
+鼓面尺寸使用倍率，会叠加在当前布局的 `radius` 上；中心鼓面
 使用独立倍率，不再叠加低音倍率。缩圈线宽范围为 2–40 设计像素，初始透明度范围
 为 0.05–1.0，尺寸倍率范围为 0.5–2.0。缩圈临近命中时仍会平滑增强到完全不透明。
 保存成功后写入 `config/projection-visuals.json`，并广播
@@ -261,6 +311,7 @@ curl -X PUT http://localhost:8000/api/v1/settings/ending-animation \
 curl -X PUT http://localhost:8000/api/v1/settings/projection-visuals \
   -H 'Content-Type: application/json' \
   -d '{
+    "showPerformanceInfo": true,
     "approachRingWidth": 18,
     "approachRingOpacity": 0.65,
     "lowPadScale": 1.1,

@@ -1,0 +1,9 @@
+{
+  "showPerformanceInfo": false,
+  "approachRingWidth": 14,
+  "approachRingOpacity": 0.22,
+  "lowPadScale": 1,
+  "midPadScale": 1,
+  "highPadScale": 1,
+  "centerPadScale": 1
+}
